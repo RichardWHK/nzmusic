@@ -1055,6 +1055,11 @@ footer a { color: var(--ink3); }
             </div>
             <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
             <hr class="divider">
+            <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:0.5rem">Diagnostics</h3>
+            <p style="font-size:13px;color:var(--ink2);margin-bottom:1rem">Check what's actually coming back from your Google Sheet.</p>
+            <button class="btn btn-outline btn-sm" onclick="runDiagnostics()">Run Sheet Diagnostics</button>
+            <div id="diagnostics-output" style="display:none;margin-top:1rem;background:var(--bg2);border:1px solid var(--border-strong);border-radius:var(--radius);padding:1rem;font-size:13px;font-family:monospace;white-space:pre-wrap;max-height:300px;overflow-y:auto"></div>
+            <hr class="divider">
             <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:1rem">Google Sheets Setup Guide</h3>
             <div style="font-size:14px;color:var(--ink2);line-height:1.8">
               <p><strong>Sheet 1: artists</strong> — columns: name, spotify_id, genres, region, bio, status, match_confidence</p>
@@ -1520,14 +1525,26 @@ async function sheetsRead(sheetName) {
   }
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(sheetName)}?key=${CONFIG.GAPI_KEY}`;
   const resp = await fetch(url);
-  if (!resp.ok) throw new Error('Could not read Google Sheet. Check Sheet ID and API key in Settings.');
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => '');
+    throw new Error(`Could not read "${sheetName}" sheet (${resp.status}). Check Sheet ID and API key in Settings. ${errText}`);
+  }
   const data = await resp.json();
-  const [headers, ...rows] = data.values || [[]];
-  return rows.map(row => {
-    const obj = {};
-    headers.forEach((h, i) => { obj[h.trim()] = (row[i] || '').trim(); });
-    return obj;
-  });
+  const rows = data.values || [];
+  if (rows.length < 1) return [];
+  const headers = rows[0].map(h => h.trim().toLowerCase()); // normalise header names
+  const dataRows = rows.slice(1);
+  const result = dataRows
+    .filter(row => row.some(cell => cell !== '')) // skip fully empty rows
+    .map(row => {
+      const obj = {};
+      headers.forEach((h, i) => {
+        obj[h] = (row[i] || '').trim();
+      });
+      return obj;
+    });
+  console.log(`[AME] sheetsRead("${sheetName}") — ${result.length} rows, headers: [${headers.join(', ')}]`);
+  return result;
 }
 
 async function sheetsWrite(action, payload) {
@@ -1591,8 +1608,19 @@ function getDemoData(sheet) {
 async function loadAllData() {
   document.getElementById('explorer-loading').style.display = 'flex';
   try {
-    allArtists = (await sheetsRead('artists')).filter(a => a.status === 'approved');
-    allPlaylists = (await sheetsRead('playlists')).filter(p => p.status === 'approved');
+    const rawArtists = await sheetsRead('artists');
+    const rawPlaylists = await sheetsRead('playlists');
+
+    // Normalise status — case-insensitive, trim whitespace
+    allArtists = rawArtists.filter(a => (a.status || '').trim().toLowerCase() === 'approved');
+    allPlaylists = rawPlaylists.filter(p => (p.status || '').trim().toLowerCase() === 'approved');
+
+    console.log(`[AME] Loaded ${rawArtists.length} artists from sheet, ${allArtists.length} approved`);
+    console.log(`[AME] Loaded ${rawPlaylists.length} playlists from sheet, ${allPlaylists.length} approved`);
+    if (rawArtists.length > 0 && allArtists.length === 0) {
+      console.warn('[AME] Artists exist in sheet but none are approved. Status values found:',
+        [...new Set(rawArtists.map(a => `"${a.status}"`))].join(', '));
+    }
 
     buildGenrePills();
     renderExplorerGrid('All');
@@ -1601,6 +1629,7 @@ async function loadAllData() {
     renderPlaylistsPage();
     populateGenreSelects();
   } catch (err) {
+    console.error('[AME] loadAllData error:', err);
     toast('⚠ ' + err.message);
   } finally {
     document.getElementById('explorer-loading').style.display = 'none';
@@ -1610,14 +1639,33 @@ async function loadAllData() {
 // ════════════════════════════════════════
 //  GENRES
 // ════════════════════════════════════════
+function parseGenres(genreStr) {
+  if (!genreStr) return [];
+  return genreStr.split(',')
+    .map(g => g.trim())
+    .filter(Boolean)
+    .map(g => capitalise(g));
+}
+
 function getAllGenres() {
   const set = new Set(['All']);
   allArtists.forEach(a => {
-    (a.genres || '').split(',').map(g => g.trim()).filter(Boolean).forEach(g => set.add(capitalise(g)));
+    parseGenres(a.genres).forEach(g => set.add(g));
   });
   return Array.from(set);
 }
-function capitalise(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function capitalise(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function filterByGenre(artists, genre) {
+  if (!genre || genre === 'All') return artists;
+  const q = genre.toLowerCase();
+  return artists.filter(a =>
+    parseGenres(a.genres).some(g => g.toLowerCase().includes(q) || q.includes(g.toLowerCase()))
+  );
+}
 
 function buildGenrePills() {
   const genres = getAllGenres();
@@ -1662,13 +1710,6 @@ function populateGenreSelects() {
 // ════════════════════════════════════════
 //  RENDER EXPLORER
 // ════════════════════════════════════════
-function filterByGenre(artists, genre) {
-  if (genre === 'All') return artists;
-  return artists.filter(a =>
-    (a.genres || '').toLowerCase().split(',').map(g => g.trim()).some(g => g.includes(genre.toLowerCase()))
-  );
-}
-
 let explorerPage = 0;
 let explorerFiltered = [];
 const EXPLORER_PAGE_SIZE = 12;
@@ -1707,7 +1748,7 @@ function buildArtistCard(a) {
   card.style.cursor = 'pointer';
   card.onclick = () => openArtistModal(a);
 
-  const genres = (a.genres || '').split(',').map(g => g.trim()).filter(Boolean);
+  const genres = parseGenres(a.genres);
   const imgId = a.spotify_id;
 
   card.innerHTML = `
@@ -2462,6 +2503,55 @@ function loadSettingsFields() {
   document.getElementById('cfg-gapi-key').value = localStorage.getItem('cfg_gapi_key') || '';
   document.getElementById('cfg-spotify-id').value = localStorage.getItem('cfg_spotify_id') || '';
   document.getElementById('cfg-webhook').value = localStorage.getItem('cfg_webhook') || '';
+}
+
+async function runDiagnostics() {
+  const out = document.getElementById('diagnostics-output');
+  out.style.display = 'block';
+  out.textContent = 'Running…\n';
+
+  const append = (msg) => { out.textContent += msg + '\n'; };
+
+  // Sheet config check
+  append(`Sheet ID: ${CONFIG.SHEET_ID || '(not set)'}`);
+  append(`API Key: ${CONFIG.GAPI_KEY ? CONFIG.GAPI_KEY.slice(0,8) + '…' : '(not set)'}`);
+  append(`Webhook: ${CONFIG.WEBHOOK_URL ? CONFIG.WEBHOOK_URL.slice(0,40) + '…' : '(not set)'}`);
+  append('');
+
+  // Try reading artists sheet
+  try {
+    const rows = await sheetsRead('artists');
+    append(`✓ artists sheet: ${rows.length} rows`);
+    if (rows.length > 0) {
+      append(`  Headers found: ${Object.keys(rows[0]).join(', ')}`);
+      const statuses = [...new Set(rows.map(r => `"${r.status || '(empty)'}"`))];
+      append(`  Status values: ${statuses.join(', ')}`);
+      const approved = rows.filter(r => (r.status||'').trim().toLowerCase() === 'approved');
+      append(`  Approved rows: ${approved.length}`);
+      const withGenres = rows.filter(r => r.genres && r.genres.trim());
+      append(`  Rows with genres: ${withGenres.length}`);
+      if (rows.length > 0) {
+        append(`  First row sample: ${JSON.stringify(rows[0])}`);
+      }
+    }
+  } catch (err) {
+    append(`✗ artists sheet error: ${err.message}`);
+  }
+
+  append('');
+
+  // Try reading playlists sheet
+  try {
+    const rows = await sheetsRead('playlists');
+    append(`✓ playlists sheet: ${rows.length} rows`);
+    const approved = rows.filter(r => (r.status||'').trim().toLowerCase() === 'approved');
+    append(`  Approved rows: ${approved.length}`);
+  } catch (err) {
+    append(`✗ playlists sheet error: ${err.message}`);
+  }
+
+  append('');
+  append('Done. Check browser console (F12) for full detail logs.');
 }
 
 function saveSettings() {
