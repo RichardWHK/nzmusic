@@ -1,0 +1,2525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aotearoa Music Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Karla:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN SYSTEM — Aotearoa Music Explorer
+   Primary: White. Accent: Black spiral / bold type.
+   Night mode: full invert via CSS variables.
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg:           #ffffff;
+  --bg2:          #f5f5f0;
+  --bg3:          #ebebeb;
+  --ink:          #0a0a0a;
+  --ink2:         #3a3a3a;
+  --ink3:         #888888;
+  --border:       rgba(0,0,0,0.10);
+  --border-strong:rgba(0,0,0,0.22);
+  --accent:       #0a0a0a;
+  --accent-inv:   #ffffff;
+  --ring1:        #0a0a0a;
+  --ring2:        #0a0a0a;
+  --success:      #1a7a3a;
+  --danger:       #b5202a;
+  --warn:         #b07000;
+  --radius:       4px;
+  --radius-lg:    8px;
+  --transition:   0.18s ease;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body:    'Karla', sans-serif;
+  --shadow:       0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.05);
+}
+[data-theme="dark"] {
+  --bg:           #0a0a0a;
+  --bg2:          #141414;
+  --bg3:          #1e1e1e;
+  --ink:          #f5f5f0;
+  --ink2:         #c8c8c0;
+  --ink3:         #666660;
+  --border:       rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.20);
+  --accent:       #f5f5f0;
+  --accent-inv:   #0a0a0a;
+  --ring1:        #f5f5f0;
+  --shadow:       0 1px 4px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  transition: background var(--transition), color var(--transition);
+}
+
+/* ── CONCENTRIC RINGS MOTIF ── */
+.rings {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.rings svg { display: block; }
+
+/* ── LAYOUT ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── TOP NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 200;
+  background: var(--bg);
+  border-bottom: 1.5px solid var(--ink);
+  padding: 0 2rem;
+  display: flex; align-items: center; gap: 1.5rem;
+  height: 60px;
+  transition: background var(--transition);
+}
+.nav-brand {
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none; color: inherit;
+  flex-shrink: 0;
+}
+.nav-logo { width: 36px; height: 36px; }
+.nav-title {
+  font-family: var(--font-display);
+  font-size: 20px; letter-spacing: 1px;
+  color: var(--ink); line-height: 1;
+}
+.nav-links { display: flex; gap: 4px; margin-left: auto; }
+.nav-link {
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 13px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--ink3); padding: 6px 12px; border-radius: var(--radius);
+  transition: color var(--transition), background var(--transition);
+  text-decoration: none; display: inline-block;
+}
+.nav-link:hover { color: var(--ink); background: var(--bg2); }
+.nav-link.active { color: var(--ink); }
+.nav-theme {
+  background: none; border: 1.5px solid var(--border-strong);
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--ink); transition: all var(--transition);
+  flex-shrink: 0;
+}
+.nav-theme:hover { background: var(--bg2); }
+
+/* ── HERO ── */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 88vh;
+  border-bottom: 1.5px solid var(--ink);
+  overflow: hidden;
+}
+.hero-left {
+  padding: 4rem 3rem 4rem 2rem;
+  display: flex; flex-direction: column; justify-content: center;
+  border-right: 1.5px solid var(--ink);
+}
+.hero-eyebrow {
+  font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
+  font-weight: 500; color: var(--ink3); margin-bottom: 1.5rem;
+  display: flex; align-items: center; gap: 8px;
+}
+.hero-eyebrow::before {
+  content: ''; width: 28px; height: 1.5px; background: var(--ink3); display: inline-block;
+}
+.hero-h1 {
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 9vw, 8rem);
+  line-height: 0.92; letter-spacing: 2px;
+  margin-bottom: 1.5rem;
+}
+.hero-h1 em { font-style: normal; display: block; }
+.hero-sub {
+  font-size: 18px; font-weight: 300; color: var(--ink2);
+  max-width: 380px; margin-bottom: 2.5rem; line-height: 1.7;
+}
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn {
+  font-family: var(--font-body); font-weight: 700; font-size: 13px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 12px 24px; border-radius: var(--radius);
+  cursor: pointer; transition: all var(--transition); text-decoration: none;
+  display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid transparent;
+}
+.btn-primary {
+  background: var(--ink); color: var(--accent-inv); border-color: var(--ink);
+}
+.btn-primary:hover { opacity: 0.85; }
+.btn-outline {
+  background: transparent; color: var(--ink); border-color: var(--border-strong);
+}
+.btn-outline:hover { background: var(--bg2); }
+.btn-sm { padding: 8px 16px; font-size: 12px; }
+.btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn-success { background: var(--success); color: #fff; border-color: var(--success); }
+
+.hero-right {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg2); position: relative; overflow: hidden;
+  padding: 3rem;
+}
+.hero-ring-wrap {
+  position: relative; display: flex;
+  align-items: center; justify-content: center;
+}
+/* Animated spiral — hero graphic */
+.ring-svg {
+  width: min(360px, 80%);
+  animation: ringPulse 6s ease-in-out infinite;
+}
+@keyframes ringPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+.hero-dice {
+  position: absolute;
+  bottom: 2.5rem; right: 2.5rem;
+}
+
+/* ── SECTION CONTAINERS ── */
+.section { padding: 4rem 2rem; }
+.section-sm { padding: 2rem; }
+.container { max-width: 1200px; margin: 0 auto; }
+.section-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 2rem; gap: 1rem;
+  border-bottom: 1.5px solid var(--ink); padding-bottom: 1rem;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 2.5rem; letter-spacing: 1.5px;
+}
+.section-sub { color: var(--ink3); font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 1.5px; }
+
+/* ── GENRE PILLS ── */
+.genre-row {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 2.5rem;
+}
+.genre-pill {
+  background: none; border: 1.5px solid var(--border-strong);
+  color: var(--ink2); font-family: var(--font-body);
+  font-size: 13px; font-weight: 500; letter-spacing: 0.5px;
+  padding: 7px 16px; border-radius: 100px; cursor: pointer;
+  transition: all var(--transition);
+}
+.genre-pill:hover { border-color: var(--ink); color: var(--ink); }
+.genre-pill.active {
+  background: var(--ink); color: var(--accent-inv);
+  border-color: var(--ink);
+}
+.genre-pill-all {
+  background: var(--bg2); border: 1.5px solid var(--border-strong);
+}
+
+/* ── CARDS GRID ── */
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1px; background: var(--ink); border: 1px solid var(--ink); }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1px; background: var(--ink); border: 1px solid var(--ink); }
+
+.card {
+  background: var(--bg);
+  padding: 0;
+  transition: background var(--transition);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.card:hover { background: var(--bg2); }
+.card-img {
+  width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--ink);
+}
+.card-img-placeholder {
+  width: 100%; aspect-ratio: 1; background: var(--bg3);
+  border-bottom: 1px solid var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink3);
+}
+.card-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.card-name {
+  font-family: var(--font-display); font-size: 1.4rem;
+  letter-spacing: 0.5px; line-height: 1.1;
+  color: var(--ink);
+}
+.card-meta { font-size: 12px; color: var(--ink3); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+.card-genres { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.card-genre-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  padding: 2px 8px; border: 1px solid var(--border-strong);
+  border-radius: 2px; color: var(--ink2);
+}
+.card-footer {
+  padding: 0.75rem 1rem; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.card-spotify-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--ink3); text-decoration: none;
+  transition: color var(--transition);
+}
+.card-spotify-link:hover { color: var(--ink); }
+.card-flag { font-size: 18px; }
+
+/* ── EMBED PLAYER ── */
+.embed-wrap {
+  margin-top: 8px;
+}
+.embed-wrap iframe {
+  border-radius: var(--radius); border: none;
+  width: 100%;
+}
+
+/* ── SEARCH BAR ── */
+.search-wrap {
+  position: relative; margin-bottom: 2rem;
+}
+.search-input {
+  width: 100%; background: var(--bg);
+  border: 1.5px solid var(--ink); border-radius: var(--radius);
+  padding: 14px 48px 14px 18px;
+  font-family: var(--font-body); font-size: 16px; color: var(--ink);
+  outline: none; transition: all var(--transition);
+}
+.search-input::placeholder { color: var(--ink3); }
+.search-input:focus { box-shadow: 0 0 0 3px rgba(0,0,0,0.1); }
+[data-theme="dark"] .search-input:focus { box-shadow: 0 0 0 3px rgba(255,255,255,0.1); }
+.search-icon {
+  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+  color: var(--ink3); pointer-events: none;
+}
+
+/* ── DICE BUTTON ── */
+.dice-btn {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 6px;
+  background: var(--ink); color: var(--accent-inv);
+  border: none; border-radius: var(--radius-lg); cursor: pointer;
+  padding: 16px 24px;
+  font-family: var(--font-body); font-weight: 700; font-size: 11px;
+  letter-spacing: 2px; text-transform: uppercase;
+  transition: all 0.2s; box-shadow: var(--shadow);
+}
+.dice-btn:hover { transform: rotate(-4deg) scale(1.05); }
+.dice-btn:active { transform: rotate(8deg) scale(0.97); }
+.dice-icon { font-size: 28px; line-height: 1; }
+
+/* ── FORMS ── */
+.form-group { margin-bottom: 1.25rem; }
+.form-label {
+  display: block; font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--ink2);
+  margin-bottom: 6px;
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%; background: var(--bg); border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius); padding: 10px 14px;
+  font-family: var(--font-body); font-size: 15px; color: var(--ink);
+  outline: none; transition: border-color var(--transition);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--ink);
+}
+.form-textarea { resize: vertical; min-height: 90px; }
+.form-hint { font-size: 12px; color: var(--ink3); margin-top: 4px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* ── AUTOCOMPLETE ── */
+.autocomplete-wrap { position: relative; }
+.autocomplete-list {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+  background: var(--bg); border: 1.5px solid var(--ink);
+  border-top: none; border-radius: 0 0 var(--radius) var(--radius);
+  max-height: 240px; overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+.autocomplete-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; cursor: pointer;
+  transition: background var(--transition); font-size: 14px;
+}
+.autocomplete-item:hover { background: var(--bg2); }
+.autocomplete-item img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--bg3); }
+.autocomplete-item-info strong { display: block; font-size: 14px; }
+.autocomplete-item-info span { font-size: 11px; color: var(--ink3); }
+
+/* ── TABS ── */
+.tab-row {
+  display: flex; border-bottom: 1.5px solid var(--ink); margin-bottom: 2rem;
+}
+.tab-btn {
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-body); font-weight: 700; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 2px;
+  color: var(--ink3); padding: 12px 20px; position: relative;
+  transition: color var(--transition);
+}
+.tab-btn::after {
+  content: ''; position: absolute; bottom: -1.5px; left: 0; right: 0; height: 2.5px;
+  background: var(--ink); transform: scaleX(0); transition: transform 0.2s;
+}
+.tab-btn.active { color: var(--ink); }
+.tab-btn.active::after { transform: scaleX(1); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── ADMIN TABLE ── */
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-table th {
+  background: var(--bg2); border-bottom: 1.5px solid var(--ink);
+  padding: 10px 12px; text-align: left; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; color: var(--ink2);
+}
+.admin-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.admin-table tr:hover td { background: var(--bg2); }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 2px; font-size: 11px;
+  font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+}
+.badge-pending { background: #fff7e0; color: var(--warn); border: 1px solid #e8d080; }
+.badge-approved { background: #e5f5eb; color: var(--success); border: 1px solid #90d4a8; }
+.badge-rejected { background: #fde8e8; color: var(--danger); border: 1px solid #f0aaaa; }
+.badge-ambiguous { background: #ffecd5; color: #b05000; border: 1px solid #f0c090; }
+[data-theme="dark"] .badge-pending { background: #2a2000; color: #e0b040; border-color: #604000; }
+[data-theme="dark"] .badge-approved { background: #003015; color: #60d090; border-color: #006030; }
+[data-theme="dark"] .badge-rejected { background: #300005; color: #f06060; border-color: #600010; }
+[data-theme="dark"] .badge-ambiguous { background: #281500; color: #d08040; border-color: #502800; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
+.modal {
+  background: var(--bg); border: 1.5px solid var(--ink);
+  border-radius: var(--radius-lg); width: 100%; max-width: 540px;
+  max-height: 90vh; overflow-y: auto;
+  padding: 2rem; transform: translateY(12px);
+  transition: transform 0.2s;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;
+}
+.modal-title { font-family: var(--font-display); font-size: 1.8rem; letter-spacing: 1px; }
+.modal-close {
+  background: none; border: 1.5px solid var(--border-strong); color: var(--ink);
+  width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition);
+}
+.modal-close:hover { background: var(--bg2); }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+  background: var(--ink); color: var(--accent-inv);
+  border-radius: var(--radius-lg); padding: 12px 20px;
+  font-size: 14px; font-weight: 500;
+  transform: translateY(80px); opacity: 0;
+  transition: transform 0.3s, opacity 0.3s;
+  pointer-events: none; max-width: 320px;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── LOADING ── */
+.loading-ring {
+  display: inline-block; width: 40px; height: 40px;
+  border: 3px solid var(--border); border-top-color: var(--ink);
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-center {
+  display: flex; flex-direction: column; align-items: center; gap: 1rem;
+  padding: 4rem; color: var(--ink3); font-size: 14px;
+}
+
+/* ── DICE RESULT PANEL ── */
+.dice-panel {
+  border: 1.5px solid var(--ink); border-radius: var(--radius-lg);
+  overflow: hidden; margin-top: 2rem;
+  display: none;
+}
+.dice-panel.show { display: block; }
+.dice-panel-header {
+  background: var(--ink); color: var(--accent-inv);
+  padding: 1rem 1.5rem; font-family: var(--font-display);
+  font-size: 1.4rem; letter-spacing: 1px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.dice-panel-body { padding: 1.5rem; background: var(--bg); }
+
+/* ── SUBMIT SECTION ── */
+.submit-strip {
+  background: var(--bg2); border-top: 1.5px solid var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+  padding: 3rem 2rem;
+}
+.submit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+
+/* ── ADMIN LAYOUT ── */
+.admin-layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.admin-sidebar {
+  background: var(--ink); color: var(--accent-inv);
+  padding: 2rem 1.5rem; position: sticky; top: 60px;
+  height: calc(100vh - 60px); overflow-y: auto;
+}
+.admin-sidebar-title {
+  font-family: var(--font-display); font-size: 1.2rem;
+  letter-spacing: 2px; margin-bottom: 1.5rem; color: var(--accent-inv);
+  opacity: 0.5;
+}
+.admin-nav-item {
+  display: block; width: 100%; text-align: left;
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 13px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(255,255,255,0.5); padding: 10px 12px;
+  border-radius: var(--radius); transition: all var(--transition);
+}
+[data-theme="dark"] .admin-nav-item { color: rgba(0,0,0,0.5); }
+.admin-nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+[data-theme="dark"] .admin-nav-item:hover { color: #000; background: rgba(0,0,0,0.1); }
+.admin-nav-item.active { background: rgba(255,255,255,0.18); color: #fff; }
+[data-theme="dark"] .admin-nav-item.active { background: rgba(0,0,0,0.18); color: #000; }
+.admin-content { padding: 2rem; background: var(--bg); overflow: hidden; }
+.admin-section { display: none; }
+.admin-section.active { display: block; }
+
+/* ── SPOTLIGHT (random result) ── */
+.spotlight {
+  display: grid; grid-template-columns: 280px 1fr;
+  border: 1.5px solid var(--ink); border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.spotlight-img {
+  width: 100%; height: 100%; object-fit: cover;
+  border-right: 1.5px solid var(--ink);
+  min-height: 200px; background: var(--bg3);
+}
+.spotlight-body { padding: 2rem; }
+.spotlight-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--ink3); margin-bottom: 8px;
+}
+.spotlight-name {
+  font-family: var(--font-display); font-size: 3rem;
+  letter-spacing: 1px; line-height: 1; margin-bottom: 12px;
+}
+
+/* ── ADMIN LOGIN ── */
+.admin-login {
+  display: flex; align-items: center; justify-content: center;
+  min-height: calc(100vh - 60px); padding: 2rem;
+}
+.admin-login-card {
+  background: var(--bg2); border: 1.5px solid var(--ink);
+  border-radius: var(--radius-lg); padding: 3rem; width: 100%; max-width: 400px;
+}
+.admin-login-logo { text-align: center; margin-bottom: 2rem; }
+.admin-login-title {
+  font-family: var(--font-display); font-size: 2rem;
+  letter-spacing: 1px; text-align: center; margin-bottom: 0.5rem;
+}
+.admin-login-sub { color: var(--ink3); font-size: 13px; text-align: center; margin-bottom: 2rem; }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1.5px solid var(--ink); padding: 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; color: var(--ink3); flex-wrap: wrap; gap: 1rem;
+}
+footer a { color: var(--ink3); }
+.footer-brand { font-family: var(--font-display); font-size: 1.1rem; color: var(--ink); letter-spacing: 1px; }
+
+/* ── MISC ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+.text-muted { color: var(--ink3); }
+.text-sm { font-size: 13px; }
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.flex { display: flex; }
+.flex-center { display: flex; align-items: center; }
+.gap-1 { gap: 0.5rem; }
+.gap-2 { gap: 1rem; }
+.w-full { width: 100%; }
+.empty-state {
+  text-align: center; padding: 4rem 2rem;
+  color: var(--ink3); font-size: 15px;
+}
+.empty-state svg { margin-bottom: 1rem; opacity: 0.3; }
+.error-msg {
+  background: #fde8e8; border: 1px solid #f0aaaa; border-radius: var(--radius);
+  padding: 10px 14px; color: var(--danger); font-size: 13px; margin-bottom: 1rem;
+}
+[data-theme="dark"] .error-msg { background: #300005; border-color: #600010; color: #f06060; }
+
+.nz-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  background: var(--ink); color: var(--accent-inv);
+  padding: 3px 8px; border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-right { display: none; }
+  .form-row { grid-template-columns: 1fr; }
+  .submit-grid { grid-template-columns: 1fr; }
+  .spotlight { grid-template-columns: 1fr; }
+  .admin-layout { grid-template-columns: 1fr; }
+  .admin-sidebar { display: none; }
+  nav { padding: 0 1rem; }
+  .nav-links { display: none; }
+  .section { padding: 2rem 1rem; }
+  body { padding-bottom: 64px; }
+}
+
+/* Mobile bottom nav */
+.mobile-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
+  background: var(--bg); border-top: 1.5px solid var(--ink);
+  padding: 0; height: 64px;
+  grid-template-columns: repeat(5, 1fr);
+}
+@media (max-width: 768px) { .mobile-nav { display: grid; } }
+.mobile-nav-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; background: none; border: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: var(--ink3); transition: color var(--transition); padding: 0;
+}
+.mobile-nav-item.active { color: var(--ink); }
+.mobile-nav-item svg { width: 20px; height: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ NAV ═══════════════ -->
+<nav id="main-nav">
+  <a class="nav-brand" href="#" onclick="showPage('explorer'); return false;">
+    <svg class="nav-logo" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 18 C18 18 20 15.5 22 15 C25 14.2 27.5 16.5 27 19.5 C26.3 23.5 22 26 18 25.5 C12.5 24.8 9 20 9.5 14.5 C10.2 7.5 16.5 3.5 23 4.5 C31 5.8 35 13 33.5 21 C31.8 30.5 23 35.5 13.5 33.5 C3 31.2 -1.5 21.5 1 11 C3.8 -1 15 -5 26 -1.5"
+        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+    </svg>
+    <div class="nav-title">
+      Aotearoa Music Explorer
+    </div>
+  </a>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="showPage('explorer')" data-page="explorer">Explore</button>
+    <button class="nav-link" onclick="showPage('artists')" data-page="artists">Artists</button>
+    <button class="nav-link" onclick="showPage('playlists')" data-page="playlists">Playlists</button>
+    <button class="nav-link" onclick="showPage('submit')" data-page="submit">Submit</button>
+  </div>
+  <button class="nav-theme" onclick="toggleTheme()" aria-label="Toggle dark mode" title="Toggle night mode">
+    <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  </button>
+</nav>
+
+<!-- ═══════════════ PAGE: EXPLORER ═══════════════ -->
+<div id="page-explorer" class="page active">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-left">
+      <p class="hero-eyebrow">Discover Aotearoa</p>
+      <h1 class="hero-h1">
+        <em>Explore</em>
+        <em>Aotearoa</em>
+        <em>Music.</em>
+      </h1>
+      <p class="hero-sub">Discover New Zealand artists, tracks, and playlists — filtered by genre, curated with aroha.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="scrollToGenres()">Browse by Genre</button>
+        <button class="btn btn-outline" onclick="showPage('artists')">All Artists</button>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Squiggly outward spiral -->
+          <path d="
+            M150,150
+            C152,147 155,145 158,145
+            C165,145 170,151 169,158
+            C167,168 158,174 148,173
+            C134,171 125,159 127,145
+            C129,128 144,117 161,120
+            C181,123 193,141 190,161
+            C187,184 166,198 143,194
+            C116,190 100,165 105,138
+            C110,108 138,90 168,96
+            C201,103 221,134 214,167
+            C207,203 173,225 137,217
+            C97,208 73,170 82,130
+            C91,87 133,61 176,71
+            C222,82 250,128 239,174
+            C228,223 179,253 130,241
+            C78,228 46,175 59,123
+            C72,68 129,34 184,48
+            C242,63 278,124 263,182
+          " stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none"/>
+        </svg>
+        <div class="hero-dice" style="position:absolute;bottom:0;right:0">
+          <button class="dice-btn" onclick="rollDice()" title="Random NZ discovery">
+            <span class="dice-icon">⚄</span>
+            <span>Roll the dice</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dice result -->
+  <div class="section-sm container">
+    <div class="dice-panel" id="dice-panel">
+      <div class="dice-panel-header">
+        <span>🎲 Your Random Discovery</span>
+        <button class="btn btn-outline btn-sm" style="color:var(--accent-inv);border-color:rgba(255,255,255,0.3)" onclick="rollDice()">Roll again</button>
+      </div>
+      <div class="dice-panel-body" id="dice-result"></div>
+    </div>
+  </div>
+
+  <!-- Genre explore -->
+  <div class="section" id="genre-section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Explore by Genre</h2>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="section-sub" id="artist-count-label"></span>
+          <button class="btn btn-outline btn-sm" id="genre-mix-btn" onclick="generateGenrePlaylistUI()" title="Generate a 10-track NZ mix for this genre" style="display:none">
+            🎵 Generate Genre Mix
+          </button>
+        </div>
+      </div>
+      <div class="genre-row" id="genre-pills"></div>
+      <div id="genre-mix-panel" style="display:none;margin-bottom:2rem">
+        <div style="border:1.5px solid var(--ink);border-radius:var(--radius-lg);overflow:hidden">
+          <div style="background:var(--ink);color:var(--accent-inv);padding:1rem 1.5rem;font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between">
+            <span id="genre-mix-title">Genre Mix</span>
+            <button class="btn btn-sm" style="color:var(--accent-inv);border-color:rgba(255,255,255,0.3);background:none;border:1px solid rgba(255,255,255,0.3)" onclick="document.getElementById('genre-mix-panel').style.display='none'">Close</button>
+          </div>
+          <div id="genre-mix-tracks" style="padding:1.5rem;background:var(--bg);display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px"></div>
+        </div>
+      </div>
+      <div id="explorer-loading" class="loading-center" style="display:none">
+        <div class="loading-ring"></div><span>Loading NZ artists…</span>
+      </div>
+      <div id="explorer-grid" class="grid-3"></div>
+      <div style="text-align:center;margin-top:2rem">
+        <button id="explorer-load-more" class="btn btn-outline" style="display:none" onclick="explorerLoadMore()">Load more artists</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Featured playlists strip -->
+  <div class="section" style="background:var(--bg2);border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink)">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">NZ Playlists</h2>
+        <button class="btn btn-outline btn-sm" onclick="showPage('playlists')">See all</button>
+      </div>
+      <div id="featured-playlists" class="grid-2"></div>
+    </div>
+  </div>
+
+</div><!-- /page-explorer -->
+
+<!-- ═══════════════ PAGE: ARTISTS ═══════════════ -->
+<div id="page-artists" class="page">
+  <div class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">NZ Artists Directory</h2>
+        <span class="section-sub" id="artists-count"></span>
+      </div>
+      <div class="search-wrap">
+        <input class="search-input" id="artist-search" type="search" placeholder="Search artists by name or genre…" oninput="filterArtists()">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <div class="genre-row" id="artists-genre-pills"></div>
+      <div id="artists-grid" class="grid-3"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PAGE: PLAYLISTS ═══════════════ -->
+<div id="page-playlists" class="page">
+  <div class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">NZ Playlists</h2>
+        <span class="section-sub" id="playlists-count"></span>
+      </div>
+      <div class="genre-row" id="playlists-genre-pills"></div>
+      <div id="playlists-grid" class="grid-2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PAGE: SUBMIT ═══════════════ -->
+<div id="page-submit" class="page">
+  <div class="section">
+    <div class="container" style="max-width:800px">
+      <div class="section-header">
+        <h2 class="section-title">Submit to the Directory</h2>
+      </div>
+      <p style="color:var(--ink2);margin-bottom:2rem">Know a New Zealand artist or playlist that should be here? Submit it for review — approved entries go straight into the directory.</p>
+
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="switchTab('submit','artist')" data-tab="artist">Submit an Artist</button>
+        <button class="tab-btn" onclick="switchTab('submit','playlist')" data-tab="playlist">Submit a Playlist</button>
+      </div>
+
+      <!-- Artist submission -->
+      <div class="tab-panel active" id="submit-tab-artist">
+        <form id="artist-submit-form" onsubmit="submitArtist(event)">
+          <div class="form-group">
+            <label class="form-label">Search for the Spotify Artist *</label>
+            <div class="autocomplete-wrap">
+              <input class="form-input" id="submit-artist-search" type="text" placeholder="Start typing artist name…" oninput="artistAutocomplete(this.value)" autocomplete="off" required>
+              <div class="autocomplete-list" id="artist-autocomplete" style="display:none"></div>
+            </div>
+            <p class="form-hint">We'll search Spotify to find the artist and confirm they're NZ-based.</p>
+          </div>
+          <input type="hidden" id="submit-artist-id">
+          <input type="hidden" id="submit-artist-name">
+          <div id="submit-artist-preview" style="display:none" class="flex-center gap-2 mt-2" style="padding:12px;background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border)">
+            <img id="submit-preview-img" width="48" height="48" style="border-radius:50%;border:1px solid var(--border)">
+            <div>
+              <strong id="submit-preview-name"></strong>
+              <div class="text-sm text-muted" id="submit-preview-genres"></div>
+            </div>
+          </div>
+          <div class="form-row mt-2">
+            <div class="form-group">
+              <label class="form-label">Your name (optional)</label>
+              <input class="form-input" id="submit-a-yourname" type="text" placeholder="Anonymous if blank">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Your email (optional)</label>
+              <input class="form-input" id="submit-a-email" type="email" placeholder="For follow-up only">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Why should they be included?</label>
+            <textarea class="form-textarea" id="submit-a-note" placeholder="A sentence or two is fine…"></textarea>
+          </div>
+          <div id="submit-artist-error" class="error-msg" style="display:none"></div>
+          <button class="btn btn-primary" type="submit">Submit for Review</button>
+        </form>
+      </div>
+
+      <!-- Playlist submission -->
+      <div class="tab-panel" id="submit-tab-playlist">
+        <form id="playlist-submit-form" onsubmit="submitPlaylist(event)">
+          <div class="form-group">
+            <label class="form-label">Spotify Playlist URL or ID *</label>
+            <input class="form-input" id="submit-playlist-url" type="text" placeholder="https://open.spotify.com/playlist/…" required oninput="previewPlaylist(this.value)">
+            <p class="form-hint">Must be a public Spotify playlist featuring NZ artists.</p>
+          </div>
+          <div id="submit-playlist-preview" style="display:none" class="mt-2" style="padding:12px;background:var(--bg2);border-radius:var(--radius)">
+            <strong id="submit-pl-name"></strong>
+            <div class="text-sm text-muted" id="submit-pl-meta"></div>
+          </div>
+          <div class="form-row mt-2">
+            <div class="form-group">
+              <label class="form-label">Playlist display name *</label>
+              <input class="form-input" id="submit-pl-desc" type="text" placeholder="e.g. Best of NZ Indie 2024" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Primary genre</label>
+              <select class="form-select" id="submit-pl-genre">
+                <option value="">— Select genre —</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Describe the playlist</label>
+            <textarea class="form-textarea" id="submit-pl-about" placeholder="What's the vibe? What kinds of NZ artists or sounds does it feature?"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Your name (optional)</label>
+              <input class="form-input" id="submit-pl-yourname" type="text" placeholder="Anonymous if blank">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Your email (optional)</label>
+              <input class="form-input" id="submit-pl-email" type="email">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Your website or social link (optional)</label>
+            <input class="form-input" id="submit-pl-social" type="url" placeholder="https://instagram.com/yourhandle or your website">
+            <p class="form-hint">We'll use this to credit you as the curator — e.g. "Submitted by Your Name"</p>
+          </div>
+          <div id="submit-playlist-error" class="error-msg" style="display:none"></div>
+          <button class="btn btn-primary" type="submit">Submit for Review</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Submission detail modal -->
+<div class="modal-overlay" id="submission-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h2 class="modal-title" id="submission-modal-title">Submission Details</h2>
+      <button class="modal-close" onclick="closeModal('submission-modal')">×</button>
+    </div>
+    <div id="submission-modal-body"></div>
+    <div style="display:flex;gap:8px;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border)" id="submission-modal-actions"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ PAGE: ADMIN ═══════════════ -->
+<div id="page-admin" class="page">
+
+  <!-- Login gate -->
+  <div id="admin-login-gate" class="admin-login">
+    <div class="admin-login-card">
+      <div class="admin-login-logo">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <path d="
+            M24,24 C24.3,23.5 25,23 25.8,23 C27.2,23 28.2,24.2 27.9,25.6
+            C27.5,27.5 25.6,28.8 23.6,28.5 C21,28.1 19.4,25.6 20,23
+            C20.7,20 23.6,18.2 26.6,19 C30.2,20 32.2,23.6 31.2,27.2
+            C30.1,31.4 26,33.7 21.8,32.5 C17,31.1 14.4,26.2 16,21.4
+            C17.8,16 23.4,13.1 28.8,15
+            C35,17.1 38.1,23.5 35.9,29.7
+            C33.5,36.7 26.4,40 19.4,37.5
+            C11.6,34.7 8.1,26.8 11,19
+          " stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+      <h2 class="admin-login-title">Admin Area</h2>
+      <p class="admin-login-sub">Aotearoa Music Explorer</p>
+      <div id="admin-login-error" class="error-msg" style="display:none"></div>
+      <div class="form-group">
+        <label class="form-label">Admin Password</label>
+        <input class="form-input" id="admin-password-input" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')adminLogin()">
+      </div>
+      <button class="btn btn-primary w-full" onclick="adminLogin()">Sign in</button>
+      <p class="form-hint mt-2" style="text-align:center">Password is set in CONFIG at top of file.</p>
+    </div>
+  </div>
+
+  <!-- Admin dashboard (shown after login) -->
+  <div id="admin-dashboard" style="display:none">
+    <div class="admin-layout">
+      <div class="admin-sidebar">
+        <div class="admin-sidebar-title">Admin</div>
+        <button class="admin-nav-item active" onclick="adminSection('submissions')" data-asec="submissions">Submissions <span id="sub-badge" style="background:rgba(255,255,255,0.2);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button>
+        <button class="admin-nav-item" onclick="adminSection('artists')" data-asec="artists">Artists</button>
+        <button class="admin-nav-item" onclick="adminSection('playlists')" data-asec="playlists">Playlists</button>
+        <button class="admin-nav-item" onclick="adminSection('import')" data-asec="import">Import Spreadsheet</button>
+        <button class="admin-nav-item" onclick="adminSection('settings')" data-asec="settings">Settings</button>
+        <hr style="border-color:rgba(255,255,255,0.1);margin:1.5rem 0">
+        <button class="admin-nav-item" onclick="adminLogout()">Log out</button>
+      </div>
+      <div class="admin-content">
+
+        <!-- Submissions -->
+        <div class="admin-section active" id="asec-submissions">
+          <div class="section-header">
+            <h2 class="section-title">Pending Submissions</h2>
+          </div>
+          <div class="tab-row">
+            <button class="tab-btn active" onclick="switchTab('admin','artist-subs')" data-tab="artist-subs">Artists</button>
+            <button class="tab-btn" onclick="switchTab('admin','playlist-subs')" data-tab="playlist-subs">Playlists</button>
+          </div>
+          <div class="tab-panel active" id="admin-tab-artist-subs">
+            <div id="admin-artist-subs-loading" class="loading-center"><div class="loading-ring"></div></div>
+            <table class="admin-table" id="admin-artist-subs-table" style="display:none">
+              <thead><tr><th>Artist</th><th>Submitted by</th><th>Note (preview)</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="admin-artist-subs-body"></tbody>
+            </table>
+            <div id="admin-artist-subs-empty" class="empty-state" style="display:none">No pending artist submissions.</div>
+          </div>
+          <div class="tab-panel" id="admin-tab-playlist-subs">
+            <div id="admin-playlist-subs-loading" class="loading-center"><div class="loading-ring"></div></div>
+            <table class="admin-table" id="admin-playlist-subs-table" style="display:none">
+              <thead><tr><th>Playlist</th><th>Genre</th><th>Submitted by</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="admin-playlist-subs-body"></tbody>
+            </table>
+            <div id="admin-playlist-subs-empty" class="empty-state" style="display:none">No pending playlist submissions.</div>
+          </div>
+        </div>
+
+        <!-- Artists management -->
+        <div class="admin-section" id="asec-artists">
+          <div class="section-header">
+            <h2 class="section-title">Artists</h2>
+            <button class="btn btn-primary btn-sm" onclick="openAddArtistModal()">+ Add Artist</button>
+          </div>
+          <div class="search-wrap" style="margin-bottom:1rem">
+            <input class="search-input" id="admin-artist-search" type="search" placeholder="Search artists…" oninput="adminFilterArtists()">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <div id="admin-artists-loading" class="loading-center"><div class="loading-ring"></div></div>
+          <table class="admin-table" id="admin-artists-table" style="display:none">
+            <thead><tr><th>Artist</th><th>Spotify ID</th><th>Genre(s)</th><th>Spotify Match</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="admin-artists-body"></tbody>
+          </table>
+        </div>
+
+        <!-- Playlists management -->
+        <div class="admin-section" id="asec-playlists">
+          <div class="section-header">
+            <h2 class="section-title">Playlists</h2>
+            <button class="btn btn-primary btn-sm" onclick="openAddPlaylistModal()">+ Add Playlist</button>
+          </div>
+          <div id="admin-playlists-loading" class="loading-center"><div class="loading-ring"></div></div>
+          <table class="admin-table" id="admin-playlists-table" style="display:none">
+            <thead><tr><th>Name</th><th>Spotify ID</th><th>Genre</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="admin-playlists-body"></tbody>
+          </table>
+        </div>
+
+        <!-- Import -->
+        <div class="admin-section" id="asec-import">
+          <div class="section-header"><h2 class="section-title">Import Spreadsheet</h2></div>
+          <p style="color:var(--ink2);margin-bottom:1.5rem;max-width:560px">Upload a CSV with artist names. The app will search Spotify for each, auto-link clear matches, and flag ambiguous ones for your review.</p>
+          <div style="border:2px dashed var(--border-strong);border-radius:var(--radius-lg);padding:3rem;text-align:center;margin-bottom:2rem">
+            <input type="file" id="import-file" accept=".csv" style="display:none" onchange="handleImportFile(this)">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 1rem;display:block;color:var(--ink3)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p style="color:var(--ink3);margin-bottom:1rem;font-size:14px">Drop your CSV here or click to browse</p>
+            <button class="btn btn-outline" onclick="document.getElementById('import-file').click()">Choose CSV file</button>
+          </div>
+          <div id="import-preview" style="display:none">
+            <div class="section-header" style="margin-bottom:1rem"><h3 class="section-title" style="font-size:1.5rem">Import Preview</h3><button class="btn btn-primary btn-sm" onclick="confirmImport()">Import All</button></div>
+            <table class="admin-table" id="import-table">
+              <thead><tr><th>Name from CSV</th><th>Spotify Match</th><th>Confidence</th><th>Genres</th><th>Include?</th></tr></thead>
+              <tbody id="import-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="admin-section" id="asec-settings">
+          <div class="section-header"><h2 class="section-title">Settings</h2></div>
+          <div style="max-width:560px">
+            <div class="form-group">
+              <label class="form-label">Google Sheets Spreadsheet ID</label>
+              <input class="form-input" id="cfg-sheet-id" type="text" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+              <p class="form-hint">Found in your Google Sheets URL: docs.google.com/spreadsheets/d/<strong>[ID]</strong>/edit</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Google API Key (public, read-only)</label>
+              <input class="form-input" id="cfg-gapi-key" type="text" placeholder="AIza…">
+              <p class="form-hint">Enable the Google Sheets API in Google Cloud Console. This key is safe to embed (restrict it to your domain).</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Spotify Client ID</label>
+              <input class="form-input" id="cfg-spotify-id" type="text" placeholder="Your Spotify app Client ID">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Admin Password</label>
+              <input class="form-input" id="cfg-admin-pw" type="password" placeholder="Set a new password">
+              <p class="form-hint">Stored in localStorage on this device only. Share with team members separately.</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Google Sheets Write Webhook URL (optional)</label>
+              <input class="form-input" id="cfg-webhook" type="url" placeholder="https://script.google.com/macros/s/…/exec">
+              <p class="form-hint">A Google Apps Script Web App URL to handle writes (approve submissions, add artists). See setup guide below.</p>
+            </div>
+            <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+            <hr class="divider">
+            <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:1rem">Google Sheets Setup Guide</h3>
+            <div style="font-size:14px;color:var(--ink2);line-height:1.8">
+              <p><strong>Sheet 1: artists</strong> — columns: name, spotify_id, genres, region, bio, status, match_confidence</p>
+              <p><strong>Sheet 2: playlists</strong> — columns: name, spotify_id, genres, curator, description, status</p>
+              <p><strong>Sheet 3: submissions_artists</strong> — columns: name, spotify_id, spotify_name, note, submitter_name, submitter_email, timestamp, status</p>
+              <p><strong>Sheet 4: submissions_playlists</strong> — columns: spotify_id, description, about, genre, submitter_name, submitter_email, submitter_social, timestamp, status</p>
+              <p class="mt-2">Share your sheet publicly (read-only) for the public facing data. Use a Google Apps Script Web App for authenticated writes.</p>
+            </div>
+            <hr class="divider">
+            <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:1rem">Google Apps Script (Webhook)</h3>
+            <p style="font-size:14px;color:var(--ink2);margin-bottom:1rem">Create a new Apps Script project bound to your spreadsheet (<strong>Extensions → Apps Script</strong>), paste the code below, then deploy as a Web App (Execute as: Me, Who has access: Anyone).</p>
+            <details>
+              <summary style="cursor:pointer;font-size:14px;font-weight:700;color:var(--ink);margin-bottom:8px">Show Apps Script code ▾</summary>
+              <pre style="background:var(--bg2);border:1px solid var(--border-strong);border-radius:var(--radius);padding:1rem;font-size:12px;overflow-x:auto;white-space:pre;line-height:1.6;margin-top:8px"><code>const SHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
+
+function doPost(e) {
+  const data = JSON.parse(e.postData.contents);
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let result = { ok: true };
+
+  if (data.action === 'submit_artist') {
+    const sheet = ss.getSheetByName('submissions_artists');
+    sheet.appendRow([data.name, data.spotify_id, data.spotify_name,
+      data.note, data.submitter_name, data.submitter_email,
+      data.timestamp, 'pending']);
+
+  } else if (data.action === 'submit_playlist') {
+    const sheet = ss.getSheetByName('submissions_playlists');
+    sheet.appendRow([data.spotify_id, data.description, data.about || '', data.genre,
+      data.submitter_name, data.submitter_email, data.submitter_social || '',
+      data.timestamp, 'pending']);
+
+  } else if (data.action === 'approve_artist_submission') {
+    const subSheet = ss.getSheetByName('submissions_artists');
+    const row = subSheet.getRange(data.row + 2, 1, 1, 8).getValues()[0];
+    subSheet.getRange(data.row + 2, 8).setValue('approved');
+    const artSheet = ss.getSheetByName('artists');
+    artSheet.appendRow([row[0], row[1], '', '', '', 'approved', 'manual']);
+
+  } else if (data.action === 'approve_playlist_submission') {
+    const subSheet = ss.getSheetByName('submissions_playlists');
+    const row = subSheet.getRange(data.row + 2, 1, 1, 7).getValues()[0];
+    subSheet.getRange(data.row + 2, 7).setValue('approved');
+    const plSheet = ss.getSheetByName('playlists');
+    plSheet.appendRow([row[1], row[0], row[2], row[3], '', 'approved']);
+
+  } else if (data.action === 'reject_submission') {
+    const sheet = ss.getSheetByName(data.sheet);
+    const lastCol = sheet.getLastColumn();
+    sheet.getRange(data.row + 2, lastCol).setValue('rejected');
+
+  } else if (data.action === 'add_artist') {
+    const sheet = ss.getSheetByName('artists');
+    sheet.appendRow([data.name, data.spotify_id, data.genres,
+      data.region || '', data.bio || '', data.status, data.match_confidence]);
+
+  } else if (data.action === 'add_playlist') {
+    const sheet = ss.getSheetByName('playlists');
+    sheet.appendRow([data.name, data.spotify_id, data.genres,
+      data.curator || '', data.description || '', data.status]);
+
+  } else if (data.action === 'remove_artist') {
+    const sheet = ss.getSheetByName('artists');
+    sheet.deleteRow(data.row + 2);
+
+  } else if (data.action === 'remove_playlist') {
+    const sheet = ss.getSheetByName('playlists');
+    sheet.deleteRow(data.row + 2);
+
+  } else {
+    result = { ok: false, error: 'Unknown action' };
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Allow CORS preflight
+function doGet(e) {
+  return ContentService.createTextOutput('OK');
+}</code></pre>
+            </details>
+          </div>
+        </div>
+
+      </div><!-- /admin-content -->
+    </div><!-- /admin-layout -->
+  </div><!-- /admin-dashboard -->
+
+</div><!-- /page-admin -->
+
+<!-- ═══════════════ SUBMIT PAGE FOOTER ═══════════════ -->
+
+<!-- Artist detail modal -->
+<div class="modal-overlay" id="artist-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="artist-modal-name"></h2>
+      <button class="modal-close" onclick="closeModal('artist-modal')">×</button>
+    </div>
+    <div id="artist-modal-body"></div>
+  </div>
+</div>
+
+<!-- Add artist modal (admin) -->
+<div class="modal-overlay" id="add-artist-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Add Artist</h2>
+      <button class="modal-close" onclick="closeModal('add-artist-modal')">×</button>
+    </div>
+    <form onsubmit="adminAddArtist(event)">
+      <div class="form-group">
+        <label class="form-label">Search Spotify *</label>
+        <div class="autocomplete-wrap">
+          <input class="form-input" id="admin-artist-search-input" type="text" placeholder="Artist name…" oninput="adminArtistAutocomplete(this.value)" autocomplete="off">
+          <div class="autocomplete-list" id="admin-artist-autocomplete" style="display:none"></div>
+        </div>
+      </div>
+      <input type="hidden" id="admin-add-artist-id">
+      <div id="admin-add-preview" style="display:none" class="flex-center gap-2 mt-2 mb-2">
+        <img id="admin-add-preview-img" width="48" height="48" style="border-radius:50%">
+        <div><strong id="admin-add-preview-name"></strong><div class="text-sm text-muted" id="admin-add-preview-genres"></div></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Override genres (comma-separated)</label>
+        <input class="form-input" id="admin-add-genres" type="text" placeholder="indie, rock, nz pop">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Region in NZ</label>
+        <input class="form-input" id="admin-add-region" type="text" placeholder="Auckland, Wellington, Dunedin…">
+      </div>
+      <button class="btn btn-primary w-full" type="submit">Add to Directory</button>
+    </form>
+  </div>
+</div>
+
+<!-- Add playlist modal (admin) -->
+<div class="modal-overlay" id="add-playlist-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Add Playlist</h2>
+      <button class="modal-close" onclick="closeModal('add-playlist-modal')">×</button>
+    </div>
+    <form onsubmit="adminAddPlaylist(event)">
+      <div class="form-group">
+        <label class="form-label">Spotify Playlist URL or ID *</label>
+        <input class="form-input" id="admin-pl-url" type="text" placeholder="https://open.spotify.com/playlist/…" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Display name *</label>
+        <input class="form-input" id="admin-pl-name" type="text" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Genre(s) (comma-separated)</label>
+        <input class="form-input" id="admin-pl-genres" type="text" placeholder="indie, pop">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Curator</label>
+        <input class="form-input" id="admin-pl-curator" type="text" placeholder="Curated by…">
+      </div>
+      <button class="btn btn-primary w-full" type="submit">Add Playlist</button>
+    </form>
+  </div>
+</div>
+
+<footer>
+  <div>
+    <a href="https://www.skitch.co.nz" target="_blank" rel="noopener" style="display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);text-decoration:none;margin-bottom:4px;opacity:0.6;transition:opacity 0.2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">Elskitcho presents</a>
+    <span class="footer-brand">Aotearoa Music Explorer</span>
+  </div>
+  <div>Music data by <a href="https://spotify.com" target="_blank">Spotify</a> · Not affiliated with Spotify AB</div>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <button class="btn btn-outline btn-sm" onclick="showPage('submit')">Submit an Artist</button>
+    <button onclick="showPage('admin')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--ink3);font-family:var(--font-body);letter-spacing:1px;opacity:0.5;transition:opacity 0.2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'" title="Admin area">admin</button>
+  </div>
+</footer>
+
+<div class="mobile-nav" id="mobile-nav">
+  <button class="mobile-nav-item active" data-page="explorer" onclick="showPage('explorer')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
+    Explore
+  </button>
+  <button class="mobile-nav-item" data-page="artists" onclick="showPage('artists')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4"/><circle cx="17" cy="17" r="4"/></svg>
+    Artists
+  </button>
+  <button class="mobile-nav-item" data-page="explorer" onclick="rollDice(); showPage('explorer');">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
+    Dice
+  </button>
+  <button class="mobile-nav-item" data-page="playlists" onclick="showPage('playlists')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    Lists
+  </button>
+  <button class="mobile-nav-item" data-page="submit" onclick="showPage('submit')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    Submit
+  </button>
+</div>
+
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════ -->
+<script>
+// ════════════════════════════════════════
+//  CONFIG — edit these or set via Admin > Settings
+// ════════════════════════════════════════
+const CONFIG = {
+  SPOTIFY_CLIENT_ID:  localStorage.getItem('cfg_spotify_id')  || 'YOUR_SPOTIFY_CLIENT_ID',
+  SHEET_ID:           localStorage.getItem('cfg_sheet_id')    || 'YOUR_GOOGLE_SHEET_ID',
+  GAPI_KEY:           localStorage.getItem('cfg_gapi_key')    || 'YOUR_GOOGLE_API_KEY',
+  WEBHOOK_URL:        localStorage.getItem('cfg_webhook')     || '',   // Google Apps Script web app
+  ADMIN_PASSWORD:     localStorage.getItem('cfg_admin_pw')    || 'aotearoa2025',
+};
+
+// ════════════════════════════════════════
+//  NZ GENRES — seed list
+// ════════════════════════════════════════
+const NZ_GENRES = [
+  'All','Pop','Rock','Indie','Hip-Hop','R&B','Soul','Electronic',
+  'Folk','Country','Jazz','Classical','Metal','Reggae','Punk',
+  'Alternative','Māori','Pacific','Blues','Funk'
+];
+
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let spotifyToken = null;
+let spotifyTokenExpiry = 0;
+let allArtists = [];
+let allPlaylists = [];
+let activeGenre = 'All';
+let artistsActiveGenre = 'All';
+let playlistsActiveGenre = 'All';
+let adminLoggedIn = false;
+let autocompleteTimer = null;
+let selectedSubmitArtist = null;
+let importRows = [];
+
+// ════════════════════════════════════════
+//  THEME
+// ════════════════════════════════════════
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  localStorage.setItem('theme', isDark ? 'light' : 'dark');
+  const icon = document.getElementById('theme-icon');
+  icon.innerHTML = isDark
+    ? `<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>`
+    : `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
+}
+(function initTheme() {
+  const saved = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  if (saved === 'dark') {
+    const icon = document.getElementById('theme-icon');
+    icon.innerHTML = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
+  }
+})();
+
+// ════════════════════════════════════════
+//  PAGE ROUTING
+// ════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const link = document.querySelector(`[data-page="${id}"]`);
+  if (link) link.classList.add('active');
+  // Mobile nav — only mark the matching item
+  document.querySelectorAll(`.mobile-nav-item[data-page="${id}"]`).forEach(b => b.classList.add('active'));
+  window.scrollTo(0, 0);
+
+  if (id === 'explorer' || id === 'artists' || id === 'playlists') {
+    if (allArtists.length === 0) loadAllData();
+  }
+  if (id === 'admin') initAdmin();
+}
+
+// ════════════════════════════════════════
+//  SPOTIFY — Client Credentials (public)
+// ════════════════════════════════════════
+async function getSpotifyToken() {
+  if (spotifyToken && Date.now() < spotifyTokenExpiry) return spotifyToken;
+  // Client credentials — safe for public catalog reads; no secret exposed
+  // We use the implicit approach: PKCE token fetch with no user scope
+  // For true client-creds you need a backend. We use a PKCE-less public token approach:
+  // The app uses Authorization Code with PKCE scoped to no user data for catalog search.
+  // On first load we do a silent token fetch. If it fails we prompt.
+  const cached = sessionStorage.getItem('sp_token');
+  const cachedExp = parseInt(sessionStorage.getItem('sp_token_exp') || '0');
+  if (cached && Date.now() < cachedExp) {
+    spotifyToken = cached;
+    spotifyTokenExpiry = cachedExp;
+    return cached;
+  }
+
+  // For a no-backend single-file app, we use PKCE with no scopes (catalog-only)
+  // Prompt user to authenticate once to get catalog access
+  return await startPKCEFlow();
+}
+
+async function startPKCEFlow() {
+  // Check for existing PKCE callback
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) {
+    return await exchangePKCECode(code);
+  }
+
+  // Check if we have a stored token
+  const t = localStorage.getItem('sp_access_token');
+  const e = parseInt(localStorage.getItem('sp_token_expiry') || '0');
+  if (t && Date.now() < e) {
+    spotifyToken = t; spotifyTokenExpiry = e;
+    sessionStorage.setItem('sp_token', t);
+    sessionStorage.setItem('sp_token_exp', String(e));
+    return t;
+  }
+
+  // Need to redirect — but we'll show a "Connect Spotify" prompt instead of auto-redirecting
+  return null;
+}
+
+async function exchangePKCECode(code) {
+  const verifier = sessionStorage.getItem('pkce_verifier');
+  if (!verifier) return null;
+  const redirectUri = window.location.origin + window.location.pathname;
+  const resp = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {'Content-Type':'application/x-www-form-urlencoded'},
+    body: new URLSearchParams({
+      grant_type: 'authorization_code', code,
+      redirect_uri: redirectUri,
+      client_id: CONFIG.SPOTIFY_CLIENT_ID,
+      code_verifier: verifier,
+    })
+  });
+  const data = await resp.json();
+  if (!resp.ok) return null;
+  const expiry = Date.now() + (data.expires_in - 60) * 1000;
+  localStorage.setItem('sp_access_token', data.access_token);
+  localStorage.setItem('sp_token_expiry', String(expiry));
+  spotifyToken = data.access_token; spotifyTokenExpiry = expiry;
+  sessionStorage.setItem('sp_token', data.access_token);
+  sessionStorage.setItem('sp_token_exp', String(expiry));
+  sessionStorage.removeItem('pkce_verifier');
+  history.replaceState({}, '', window.location.pathname);
+  return data.access_token;
+}
+
+async function connectSpotify() {
+  const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
+  const challenge = await sha256(verifier);
+  sessionStorage.setItem('pkce_verifier', verifier);
+  const redirectUri = window.location.origin + window.location.pathname;
+  const params = new URLSearchParams({
+    response_type: 'code', client_id: CONFIG.SPOTIFY_CLIENT_ID,
+    scope: 'user-library-modify user-follow-modify',
+    redirect_uri: redirectUri, code_challenge_method: 'S256',
+    code_challenge: challenge,
+  });
+  window.location.href = `https://accounts.spotify.com/authorize?${params}`;
+}
+
+function base64url(buf) {
+  return btoa(String.fromCharCode(...buf)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+async function sha256(plain) {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(plain));
+  return base64url(new Uint8Array(hash));
+}
+
+async function spotifyFetch(path, retries = 3) {
+  const token = await getSpotifyToken();
+  if (!token) {
+    showConnectBanner();
+    return null;
+  }
+  for (let i = 0; i <= retries; i++) {
+    const resp = await fetch('https://api.spotify.com/v1' + path, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (resp.status === 429) {
+      const wait = parseInt(resp.headers.get('Retry-After') || '1') * 1000 + Math.pow(2,i)*300;
+      await sleep(wait); continue;
+    }
+    if (resp.status === 204) return null;
+    if (resp.status === 401) { localStorage.removeItem('sp_access_token'); showConnectBanner(); return null; }
+    const json = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(json.error?.message || 'Spotify error');
+    return json;
+  }
+  throw new Error('Rate limited, try again later');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function showConnectBanner() {
+  const existing = document.getElementById('connect-banner');
+  if (existing) return;
+  const banner = document.createElement('div');
+  banner.id = 'connect-banner';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:800;background:var(--ink);color:var(--accent-inv);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;border-top:2px solid var(--border-strong)';
+  banner.innerHTML = `
+    <div>
+      <strong style="font-family:var(--font-display);letter-spacing:1px;font-size:1.1rem">Connect Spotify</strong>
+      <p style="font-size:13px;opacity:0.7;margin-top:2px">Required to load artist and track data from the Spotify catalog</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button class="btn btn-outline btn-sm" style="color:var(--accent-inv);border-color:rgba(255,255,255,0.3)" onclick="document.getElementById('connect-banner').remove()">Later</button>
+      <button class="btn btn-primary btn-sm" style="background:#1DB954;border-color:#1DB954;color:#000" onclick="connectSpotify()">Connect with Spotify</button>
+    </div>`;
+  document.body.appendChild(banner);
+}
+
+// ════════════════════════════════════════
+//  GOOGLE SHEETS — read data
+// ════════════════════════════════════════
+async function sheetsRead(sheetName) {
+  if (!CONFIG.SHEET_ID || CONFIG.SHEET_ID === 'YOUR_GOOGLE_SHEET_ID') {
+    return getDemoData(sheetName);
+  }
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(sheetName)}?key=${CONFIG.GAPI_KEY}`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('Could not read Google Sheet. Check Sheet ID and API key in Settings.');
+  const data = await resp.json();
+  const [headers, ...rows] = data.values || [[]];
+  return rows.map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h.trim()] = (row[i] || '').trim(); });
+    return obj;
+  });
+}
+
+async function sheetsWrite(action, payload) {
+  if (!CONFIG.WEBHOOK_URL) {
+    toast('⚠ No webhook URL set. Configure in Admin > Settings to enable writes.');
+    return false;
+  }
+  const resp = await fetch(CONFIG.WEBHOOK_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ action, ...payload })
+  });
+  return resp.ok;
+}
+
+// ════════════════════════════════════════
+//  DEMO DATA — shown before Google Sheets connected
+// ════════════════════════════════════════
+function getDemoData(sheet) {
+  const artists = [
+    {name:'Lorde',spotify_id:'163tK9Wjr9P9DmM0AVK7lm',genres:'pop, indie pop, electropop',region:'Auckland',status:'approved',match_confidence:'auto'},
+    {name:'Six60',spotify_id:'7Cep9JFuFvxaqBW1O1OAQM',genres:'reggae, pop, pacific',region:'Wellington',status:'approved',match_confidence:'auto'},
+    {name:'Fat Freddy\'s Drop',spotify_id:'1a1HhKrIolV0JBumeCFPOm',genres:'soul, reggae, dub, funk',region:'Wellington',status:'approved',match_confidence:'auto'},
+    {name:'Aldous Harding',spotify_id:'2565MdD0sKoReJugfxBZAI',genres:'indie folk, alternative',region:'Canterbury',status:'approved',match_confidence:'auto'},
+    {name:'Unknown Mortal Orchestra',spotify_id:'1mj2AGbnC9fgj3fcXfqYGm',genres:'indie, psychedelic rock, lo-fi',region:'Auckland',status:'approved',match_confidence:'auto'},
+    {name:'The Beths',spotify_id:'7aw6wMD9i5BSQR4SXWL3S0',genres:'indie pop, power pop',region:'Auckland',status:'approved',match_confidence:'auto'},
+    {name:'Benee',spotify_id:'32oego8KVxSShCzTR7SMFQ',genres:'pop, indie pop, dream pop',region:'Auckland',status:'approved',match_confidence:'auto'},
+    {name:'Tami Neilson',spotify_id:'6CGiDhFLJoqxsEPrRaQ2Bp',genres:'country, rockabilly, soul',region:'Auckland',status:'approved',match_confidence:'auto'},
+    {name:'Troy Kingi',spotify_id:'6CyWQ0x5a4Y6M3GiHSAH0H',genres:'soul, r&b, māori',region:'Northland',status:'approved',match_confidence:'auto'},
+    {name:'Marlon Williams',spotify_id:'02SjTxSN1KhGKwfqOFXBtR',genres:'folk, alternative country',region:'Canterbury',status:'approved',match_confidence:'auto'},
+    {name:'Gin Wigmore',spotify_id:'3lOIfJI3WVGn26wSlmB50e',genres:'pop, blues, rock',region:'Auckland',status:'approved',match_confidence:'auto'},
+    {name:'Shapeshifter',spotify_id:'06LuHSmVtMKG1DqxOwF4rn',genres:'drum and bass, electronic',region:'Wellington',status:'approved',match_confidence:'auto'},
+  ];
+  const playlists = [
+    {name:'Best of NZ 2024',spotify_id:'37i9dQZF1DX2e7b4q0P9bt',genres:'pop, indie',curator:'Spotify NZ',description:'Top NZ tracks of 2024',status:'approved'},
+    {name:'NZ Indie Essentials',spotify_id:'37i9dQZF1DXc6IHFCuCCcK',genres:'indie',curator:'AME',description:'Essential NZ indie listening',status:'approved'},
+    {name:'Aotearoa Soul & R&B',spotify_id:'37i9dQZF1DX8Sz1gsYZdwj',genres:'soul, r&b',curator:'AME',description:'NZ soul and R&B vibes',status:'approved'},
+  ];
+  const submissions_artists = [
+    {name:'Marisa and the moths',spotify_id:'',spotify_name:'',note:'Great emerging NZ act',submitter_name:'Jane',submitter_email:'',timestamp:'2025-05-01',status:'pending'},
+  ];
+  const submissions_playlists = [];
+  const map = {artists, playlists, submissions_artists, submissions_playlists};
+  return map[sheet] || [];
+}
+
+// ════════════════════════════════════════
+//  LOAD DATA
+// ════════════════════════════════════════
+async function loadAllData() {
+  document.getElementById('explorer-loading').style.display = 'flex';
+  try {
+    allArtists = (await sheetsRead('artists')).filter(a => a.status === 'approved');
+    allPlaylists = (await sheetsRead('playlists')).filter(p => p.status === 'approved');
+
+    buildGenrePills();
+    renderExplorerGrid('All');
+    renderFeaturedPlaylists();
+    renderArtistsPage();
+    renderPlaylistsPage();
+    populateGenreSelects();
+  } catch (err) {
+    toast('⚠ ' + err.message);
+  } finally {
+    document.getElementById('explorer-loading').style.display = 'none';
+  }
+}
+
+// ════════════════════════════════════════
+//  GENRES
+// ════════════════════════════════════════
+function getAllGenres() {
+  const set = new Set(['All']);
+  allArtists.forEach(a => {
+    (a.genres || '').split(',').map(g => g.trim()).filter(Boolean).forEach(g => set.add(capitalise(g)));
+  });
+  return Array.from(set);
+}
+function capitalise(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function buildGenrePills() {
+  const genres = getAllGenres();
+  buildPillsInto('genre-pills', genres, activeGenre, g => {
+    activeGenre = g;
+    renderExplorerGrid(g);
+    const mixBtn = document.getElementById('genre-mix-btn');
+    mixBtn.style.display = g === 'All' ? 'none' : 'inline-flex';
+    document.getElementById('genre-mix-panel').style.display = 'none';
+  });
+  buildPillsInto('artists-genre-pills', genres, artistsActiveGenre, g => { artistsActiveGenre = g; renderArtistsPage(); });
+  buildPillsInto('playlists-genre-pills', ['All', ...new Set(allPlaylists.flatMap(p => (p.genres||'').split(',').map(g => g.trim().charAt(0).toUpperCase() + g.trim().slice(1))))].filter(Boolean), playlistsActiveGenre, g => { playlistsActiveGenre = g; renderPlaylistsPage(); });
+}
+
+function buildPillsInto(containerId, genres, active, onClick) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+  genres.forEach(g => {
+    const btn = document.createElement('button');
+    btn.className = 'genre-pill' + (g === active ? ' active' : '') + (g === 'All' ? ' genre-pill-all' : '');
+    btn.textContent = g;
+    btn.onclick = () => {
+      el.querySelectorAll('.genre-pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      onClick(g);
+    };
+    el.appendChild(btn);
+  });
+}
+
+function populateGenreSelects() {
+  const genres = getAllGenres().filter(g => g !== 'All');
+  ['submit-pl-genre'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— Select genre —</option>';
+    genres.forEach(g => { const o = document.createElement('option'); o.value = g; o.textContent = g; sel.appendChild(o); });
+  });
+}
+
+// ════════════════════════════════════════
+//  RENDER EXPLORER
+// ════════════════════════════════════════
+function filterByGenre(artists, genre) {
+  if (genre === 'All') return artists;
+  return artists.filter(a =>
+    (a.genres || '').toLowerCase().split(',').map(g => g.trim()).some(g => g.includes(genre.toLowerCase()))
+  );
+}
+
+let explorerPage = 0;
+let explorerFiltered = [];
+const EXPLORER_PAGE_SIZE = 12;
+
+function renderExplorerGrid(genre) {
+  explorerPage = 0;
+  explorerFiltered = filterByGenre(allArtists, genre);
+  document.getElementById('artist-count-label').textContent = explorerFiltered.length + ' artists';
+  const grid = document.getElementById('explorer-grid');
+  grid.innerHTML = '';
+  if (!explorerFiltered.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No artists found for this genre.</div>';
+    document.getElementById('explorer-load-more').style.display = 'none';
+    return;
+  }
+  explorerFiltered.slice(0, EXPLORER_PAGE_SIZE).forEach(a => grid.appendChild(buildArtistCard(a)));
+  document.getElementById('explorer-load-more').style.display =
+    explorerFiltered.length > EXPLORER_PAGE_SIZE ? 'inline-flex' : 'none';
+  explorerPage = 1;
+}
+
+function explorerLoadMore() {
+  const start = explorerPage * EXPLORER_PAGE_SIZE;
+  const slice = explorerFiltered.slice(start, start + EXPLORER_PAGE_SIZE);
+  const grid = document.getElementById('explorer-grid');
+  slice.forEach(a => grid.appendChild(buildArtistCard(a)));
+  explorerPage++;
+  if (explorerPage * EXPLORER_PAGE_SIZE >= explorerFiltered.length) {
+    document.getElementById('explorer-load-more').style.display = 'none';
+  }
+}
+
+function buildArtistCard(a) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.style.cursor = 'pointer';
+  card.onclick = () => openArtistModal(a);
+
+  const genres = (a.genres || '').split(',').map(g => g.trim()).filter(Boolean);
+  const imgId = a.spotify_id;
+
+  card.innerHTML = `
+    <div class="card-img-placeholder" id="art-${imgId}">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    </div>
+    <div class="card-body">
+      <div class="card-name">${escHtml(a.name)}</div>
+      <div class="card-meta">🇳🇿 ${escHtml(a.region || 'New Zealand')}</div>
+      <div class="card-genres">
+        ${genres.slice(0,3).map(g => `<span class="card-genre-tag">${escHtml(g)}</span>`).join('')}
+      </div>
+    </div>
+    <div class="card-footer">
+      <a class="card-spotify-link" href="https://open.spotify.com/artist/${a.spotify_id}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+        Spotify
+      </a>
+    </div>`;
+
+  // Lazy-load Spotify artist image
+  if (a.spotify_id) {
+    loadArtistImage(a.spotify_id, `art-${imgId}`, card);
+  }
+  return card;
+}
+
+async function loadArtistImage(spotifyId, placeholderId, card) {
+  try {
+    const data = await spotifyFetch('/artists/' + spotifyId);
+    if (!data) return;
+    const imgUrl = data.images?.[1]?.url || data.images?.[0]?.url;
+    if (!imgUrl) return;
+    const placeholder = document.getElementById(placeholderId);
+    if (!placeholder) return;
+    const img = document.createElement('img');
+    img.className = 'card-img'; img.src = imgUrl; img.alt = data.name; img.loading = 'lazy';
+    placeholder.replaceWith(img);
+  } catch {}
+}
+
+function renderFeaturedPlaylists() {
+  const grid = document.getElementById('featured-playlists');
+  grid.innerHTML = '';
+  allPlaylists.slice(0, 6).forEach(p => grid.appendChild(buildPlaylistCard(p)));
+}
+
+function buildPlaylistCard(p) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  const plId = extractSpotifyId(p.spotify_id || '', 'playlist');
+  card.innerHTML = `
+    <div class="card-body">
+      <div class="card-name">${escHtml(p.name)}</div>
+      <div class="card-meta" style="margin-bottom:8px">${escHtml(p.description || p.genres || '')}</div>
+      ${p.curator ? `<div class="text-sm text-muted">Curated by ${escHtml(p.curator)}</div>` : ''}
+      ${plId ? `<div class="embed-wrap mt-2"><iframe src="https://open.spotify.com/embed/playlist/${plId}?utm_source=generator" width="100%" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>` : ''}
+    </div>`;
+  return card;
+}
+
+// ════════════════════════════════════════
+//  ARTISTS PAGE
+// ════════════════════════════════════════
+function renderArtistsPage() {
+  const query = (document.getElementById('artist-search')?.value || '').toLowerCase();
+  let filtered = filterByGenre(allArtists, artistsActiveGenre);
+  if (query) filtered = filtered.filter(a => a.name.toLowerCase().includes(query) || (a.genres||'').toLowerCase().includes(query));
+  document.getElementById('artists-count').textContent = filtered.length + ' artists';
+  const grid = document.getElementById('artists-grid');
+  grid.innerHTML = '';
+  if (!filtered.length) { grid.innerHTML = '<div class="empty-state">No artists found.</div>'; return; }
+  filtered.forEach(a => grid.appendChild(buildArtistCard(a)));
+}
+function filterArtists() { renderArtistsPage(); }
+
+// ════════════════════════════════════════
+//  PLAYLISTS PAGE
+// ════════════════════════════════════════
+function renderPlaylistsPage() {
+  let filtered = playlistsActiveGenre === 'All' ? allPlaylists : allPlaylists.filter(p =>
+    (p.genres||'').toLowerCase().split(',').some(g => g.trim().includes(playlistsActiveGenre.toLowerCase()))
+  );
+  document.getElementById('playlists-count').textContent = filtered.length + ' playlists';
+  const grid = document.getElementById('playlists-grid');
+  grid.innerHTML = '';
+  if (!filtered.length) { grid.innerHTML = '<div class="empty-state">No playlists found.</div>'; return; }
+  filtered.forEach(p => grid.appendChild(buildPlaylistCard(p)));
+}
+
+// ════════════════════════════════════════
+//  ARTIST MODAL
+// ════════════════════════════════════════
+async function openArtistModal(a) {
+  document.getElementById('artist-modal-name').textContent = a.name;
+  const body = document.getElementById('artist-modal-body');
+  body.innerHTML = `
+    <div class="text-sm text-muted" style="margin-bottom:1rem">🇳🇿 ${escHtml(a.region || 'New Zealand')}</div>
+    <div class="card-genres" style="margin-bottom:1rem">
+      ${(a.genres||'').split(',').map(g => `<span class="card-genre-tag">${escHtml(g.trim())}</span>`).join('')}
+    </div>
+    <div id="modal-artist-tracks" class="loading-center"><div class="loading-ring"></div><span>Loading top tracks…</span></div>`;
+
+  openModal('artist-modal');
+
+  // Load top tracks embed
+  if (a.spotify_id) {
+    const tracksDiv = document.getElementById('modal-artist-tracks');
+    tracksDiv.innerHTML = `
+      <div class="embed-wrap">
+        <iframe src="https://open.spotify.com/embed/artist/${a.spotify_id}?utm_source=generator" width="100%" height="352" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+      </div>
+      <a class="card-spotify-link mt-2" href="https://open.spotify.com/artist/${a.spotify_id}" target="_blank" rel="noopener" style="margin-top:12px;display:inline-flex">
+        View full profile on Spotify →
+      </a>`;
+  }
+}
+
+// ════════════════════════════════════════
+//  ROLL THE DICE
+// ════════════════════════════════════════
+async function rollDice() {
+  if (allArtists.length === 0) { toast('Loading data first…'); await loadAllData(); }
+  const panel = document.getElementById('dice-panel');
+  const result = document.getElementById('dice-result');
+  panel.classList.add('show');
+  result.innerHTML = '<div class="loading-center"><div class="loading-ring"></div><span>Rolling…</span></div>';
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  // Pick random type
+  const types = ['artist', 'track', 'playlist'];
+  const type = types[Math.floor(Math.random() * types.length)];
+
+  try {
+    if (type === 'artist') {
+      const a = allArtists[Math.floor(Math.random() * allArtists.length)];
+      result.innerHTML = `
+        <div class="spotlight-label">Random NZ Artist</div>
+        <div class="spotlight-name">${escHtml(a.name)}</div>
+        <div class="card-genres" style="margin-bottom:1rem">
+          ${(a.genres||'').split(',').map(g=>`<span class="card-genre-tag">${escHtml(g.trim())}</span>`).join('')}
+        </div>
+        <div class="embed-wrap">
+          <iframe src="https://open.spotify.com/embed/artist/${a.spotify_id}?utm_source=generator" width="100%" height="232" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        </div>`;
+    } else if (type === 'playlist') {
+      const p = allPlaylists[Math.floor(Math.random() * allPlaylists.length)];
+      const plId = extractSpotifyId(p.spotify_id, 'playlist');
+      result.innerHTML = `
+        <div class="spotlight-label">Random NZ Playlist</div>
+        <div class="spotlight-name">${escHtml(p.name)}</div>
+        ${plId ? `<div class="embed-wrap"><iframe src="https://open.spotify.com/embed/playlist/${plId}?utm_source=generator" width="100%" height="232" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>` : ''}`;
+    } else {
+      // Random track from a random NZ artist
+      const a = allArtists[Math.floor(Math.random() * allArtists.length)];
+      const data = await spotifyFetch(`/artists/${a.spotify_id}/top-tracks?market=NZ`);
+      if (!data || !data.tracks?.length) { rollDice(); return; }
+      const track = data.tracks[Math.floor(Math.random() * Math.min(5, data.tracks.length))];
+      result.innerHTML = `
+        <div class="spotlight-label">Random NZ Track · ${escHtml(a.name)}</div>
+        <div class="spotlight-name">${escHtml(track.name)}</div>
+        <div class="embed-wrap">
+          <iframe src="https://open.spotify.com/embed/track/${track.id}?utm_source=generator" width="100%" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        </div>`;
+    }
+  } catch (err) {
+    result.innerHTML = `<p class="text-muted">Something went wrong: ${err.message}</p>`;
+  }
+}
+
+// ════════════════════════════════════════
+//  GENRE PLAYLIST GENERATOR
+// ════════════════════════════════════════
+async function generateGenrePlaylistUI() {
+  if (activeGenre === 'All') { toast('Select a genre first'); return; }
+  const panel = document.getElementById('genre-mix-panel');
+  const tracksDiv = document.getElementById('genre-mix-tracks');
+  const titleEl = document.getElementById('genre-mix-title');
+  titleEl.textContent = activeGenre + ' — NZ Explorer Mix';
+  panel.style.display = 'block';
+  tracksDiv.innerHTML = '<div class="loading-center" style="grid-column:1/-1"><div class="loading-ring"></div><span>Finding NZ ' + activeGenre + ' tracks…</span></div>';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  const artists = filterByGenre(allArtists, activeGenre);
+  if (!artists.length) { tracksDiv.innerHTML = '<p class="text-muted">No artists found for this genre.</p>'; return; }
+
+  // Shuffle and pick up to 10 artists
+  const shuffled = [...artists].sort(() => Math.random() - 0.5).slice(0, 10);
+  const trackIds = [];
+  const trackData = [];
+
+  for (const a of shuffled) {
+    try {
+      const data = await spotifyFetch(`/artists/${a.spotify_id}/top-tracks?market=NZ`);
+      if (data?.tracks?.length) {
+        const track = data.tracks[Math.floor(Math.random() * Math.min(3, data.tracks.length))];
+        trackIds.push(track.id);
+        trackData.push({ track, artist: a });
+      }
+    } catch {}
+    if (trackIds.length >= 10) break;
+  }
+
+  if (!trackIds.length) { tracksDiv.innerHTML = '<p class="text-muted">Could not load tracks. Make sure Spotify is connected.</p>'; return; }
+
+  tracksDiv.innerHTML = trackData.map(({ track, artist }) => `
+    <div>
+      <iframe
+        src="https://open.spotify.com/embed/track/${track.id}?utm_source=generator"
+        width="100%" height="80"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy" style="border:none;border-radius:var(--radius)"></iframe>
+    </div>`).join('');
+}
+
+async function generateGenrePlaylist(genre) {
+  activeGenre = genre;
+  document.getElementById('genre-mix-btn').style.display = 'inline-flex';
+  await generateGenrePlaylistUI();
+}
+
+// ════════════════════════════════════════
+//  AUTOCOMPLETE (public submissions)
+// ════════════════════════════════════════
+function artistAutocomplete(val) {
+  clearTimeout(autocompleteTimer);
+  const list = document.getElementById('artist-autocomplete');
+  if (!val || val.length < 2) { list.style.display = 'none'; return; }
+  autocompleteTimer = setTimeout(async () => {
+    const data = await spotifyFetch(`/search?q=${encodeURIComponent(val)}&type=artist&limit=6`);
+    if (!data) return;
+    renderAutocomplete(data.artists?.items || [], list, (artist) => {
+      document.getElementById('submit-artist-search').value = artist.name;
+      document.getElementById('submit-artist-id').value = artist.id;
+      document.getElementById('submit-artist-name').value = artist.name;
+      list.style.display = 'none';
+      // Show preview
+      const prev = document.getElementById('submit-artist-preview');
+      document.getElementById('submit-preview-img').src = artist.images?.[2]?.url || artist.images?.[0]?.url || '';
+      document.getElementById('submit-preview-name').textContent = artist.name;
+      document.getElementById('submit-preview-genres').textContent = (artist.genres||[]).slice(0,3).join(', ');
+      prev.style.display = 'flex'; prev.style.alignItems = 'center'; prev.style.gap = '12px';
+      prev.style.padding = '12px'; prev.style.background = 'var(--bg2)';
+      prev.style.borderRadius = 'var(--radius)'; prev.style.border = '1px solid var(--border)';
+      selectedSubmitArtist = artist;
+    });
+  }, 300);
+}
+
+function adminArtistAutocomplete(val) {
+  clearTimeout(autocompleteTimer);
+  const list = document.getElementById('admin-artist-autocomplete');
+  if (!val || val.length < 2) { list.style.display = 'none'; return; }
+  autocompleteTimer = setTimeout(async () => {
+    const data = await spotifyFetch(`/search?q=${encodeURIComponent(val)}&type=artist&limit=6`);
+    if (!data) return;
+    renderAutocomplete(data.artists?.items || [], list, (artist) => {
+      document.getElementById('admin-artist-search-input').value = artist.name;
+      document.getElementById('admin-add-artist-id').value = artist.id;
+      list.style.display = 'none';
+      document.getElementById('admin-add-preview').style.display = 'flex';
+      document.getElementById('admin-add-preview-img').src = artist.images?.[2]?.url || '';
+      document.getElementById('admin-add-preview-name').textContent = artist.name;
+      document.getElementById('admin-add-preview-genres').textContent = (artist.genres||[]).slice(0,3).join(', ');
+    });
+  }, 300);
+}
+
+function renderAutocomplete(items, list, onSelect) {
+  list.innerHTML = '';
+  if (!items.length) { list.style.display = 'none'; return; }
+  items.forEach(artist => {
+    const item = document.createElement('div');
+    item.className = 'autocomplete-item';
+    const img = artist.images?.[2]?.url || artist.images?.[0]?.url || '';
+    item.innerHTML = `
+      ${img ? `<img src="${img}" alt="${escHtml(artist.name)}">` : `<div style="width:36px;height:36px;border-radius:50%;background:var(--bg3);flex-shrink:0"></div>`}
+      <div class="autocomplete-item-info">
+        <strong>${escHtml(artist.name)}</strong>
+        <span>${(artist.genres||[]).slice(0,2).join(', ') || 'Artist'}</span>
+      </div>`;
+    item.onclick = () => onSelect(artist);
+    list.appendChild(item);
+  });
+  list.style.display = 'block';
+}
+
+// Close autocomplete on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrap')) {
+    document.querySelectorAll('.autocomplete-list').forEach(l => l.style.display = 'none');
+  }
+});
+
+// ════════════════════════════════════════
+//  PLAYLIST URL PREVIEW
+// ════════════════════════════════════════
+let previewTimer = null;
+async function previewPlaylist(val) {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(async () => {
+    const id = extractSpotifyId(val, 'playlist');
+    if (!id) return;
+    const data = await spotifyFetch('/playlists/' + id + '?fields=name,tracks.total,owner.display_name');
+    if (!data) return;
+    document.getElementById('submit-pl-name').textContent = data.name;
+    document.getElementById('submit-pl-meta').textContent = `${data.tracks?.total} tracks · by ${data.owner?.display_name}`;
+    document.getElementById('submit-playlist-preview').style.display = 'block';
+  }, 500);
+}
+
+// ════════════════════════════════════════
+//  SUBMISSIONS
+// ════════════════════════════════════════
+async function submitArtist(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('submit-artist-error');
+  errEl.style.display = 'none';
+  if (!selectedSubmitArtist) { errEl.textContent = 'Please search for and select a Spotify artist.'; errEl.style.display = 'block'; return; }
+
+  const payload = {
+    action: 'submit_artist',
+    name: selectedSubmitArtist.name,
+    spotify_id: selectedSubmitArtist.id,
+    spotify_name: selectedSubmitArtist.name,
+    note: document.getElementById('submit-a-note').value,
+    submitter_name: document.getElementById('submit-a-yourname').value || 'Anonymous',
+    submitter_email: document.getElementById('submit-a-email').value,
+    timestamp: new Date().toISOString(),
+    status: 'pending',
+  };
+
+  const ok = await sheetsWrite('submit_artist', payload);
+  if (!CONFIG.WEBHOOK_URL) {
+    // Demo mode: show success anyway
+    toast('✓ Submission received! (Demo mode — configure webhook to persist)');
+    document.getElementById('artist-submit-form').reset();
+    document.getElementById('submit-artist-preview').style.display = 'none';
+    selectedSubmitArtist = null;
+    return;
+  }
+  if (ok) {
+    toast('✓ Artist submitted for review. Thank you!');
+    document.getElementById('artist-submit-form').reset();
+    document.getElementById('submit-artist-preview').style.display = 'none';
+    selectedSubmitArtist = null;
+  } else {
+    errEl.textContent = 'Submission failed. Please try again.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function submitPlaylist(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('submit-playlist-error');
+  errEl.style.display = 'none';
+  const urlVal = document.getElementById('submit-playlist-url').value;
+  const id = extractSpotifyId(urlVal, 'playlist');
+  if (!id) { errEl.textContent = 'Please enter a valid Spotify playlist URL or ID.'; errEl.style.display = 'block'; return; }
+
+  const payload = {
+    action: 'submit_playlist',
+    spotify_id: id,
+    description: document.getElementById('submit-pl-desc').value,
+    about: document.getElementById('submit-pl-about').value,
+    genre: document.getElementById('submit-pl-genre').value,
+    submitter_name: document.getElementById('submit-pl-yourname').value || 'Anonymous',
+    submitter_email: document.getElementById('submit-pl-email').value,
+    submitter_social: document.getElementById('submit-pl-social').value,
+    timestamp: new Date().toISOString(),
+    status: 'pending',
+  };
+
+  await sheetsWrite('submit_playlist', payload);
+  toast('✓ Playlist submitted for review. Thank you!');
+  document.getElementById('playlist-submit-form').reset();
+  document.getElementById('submit-playlist-preview').style.display = 'none';
+}
+
+// ════════════════════════════════════════
+//  ADMIN
+// ════════════════════════════════════════
+function initAdmin() {
+  const loggedIn = sessionStorage.getItem('admin_logged_in') === 'true';
+  if (loggedIn) { adminLoggedIn = true; showAdminDashboard(); }
+  else { document.getElementById('admin-login-gate').style.display = 'flex'; document.getElementById('admin-dashboard').style.display = 'none'; }
+}
+
+function adminLogin() {
+  const pw = document.getElementById('admin-password-input').value;
+  // Reload config in case it was updated via Settings
+  CONFIG.ADMIN_PASSWORD = localStorage.getItem('cfg_admin_pw') || 'aotearoa2025';
+  if (pw === CONFIG.ADMIN_PASSWORD) {
+    sessionStorage.setItem('admin_logged_in', 'true');
+    adminLoggedIn = true;
+    showAdminDashboard();
+  } else {
+    const errEl = document.getElementById('admin-login-error');
+    errEl.textContent = 'Incorrect password.';
+    errEl.style.display = 'block';
+  }
+}
+
+function adminLogout() {
+  sessionStorage.removeItem('admin_logged_in');
+  adminLoggedIn = false;
+  document.getElementById('admin-dashboard').style.display = 'none';
+  document.getElementById('admin-login-gate').style.display = 'flex';
+}
+
+function showAdminDashboard() {
+  document.getElementById('admin-login-gate').style.display = 'none';
+  document.getElementById('admin-dashboard').style.display = 'block';
+  loadAdminData();
+  loadSettingsFields();
+}
+
+async function loadAdminData() {
+  await loadAdminSubmissions();
+  await loadAdminArtists();
+  await loadAdminPlaylists();
+}
+
+async function loadAdminSubmissions() {
+  try {
+    const subs = await sheetsRead('submissions_artists');
+    const pending = subs.filter(s => s.status === 'pending');
+    document.getElementById('sub-badge').textContent = pending.length || '';
+
+    const tbody = document.getElementById('admin-artist-subs-body');
+    const loadingEl = document.getElementById('admin-artist-subs-loading');
+    const tableEl = document.getElementById('admin-artist-subs-table');
+    const emptyEl = document.getElementById('admin-artist-subs-empty');
+    loadingEl.style.display = 'none';
+
+    if (!subs.length) { emptyEl.style.display = 'block'; tableEl.style.display = 'none'; return; }
+    emptyEl.style.display = 'none';
+    tableEl.style.display = 'table';
+    tbody.innerHTML = '';
+    subs.forEach((s, i) => {
+      const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      tr.title = 'Click to view full details';
+      tr.innerHTML = `
+        <td>
+          <span style="font-weight:600;border-bottom:1px dashed var(--border-strong)">${escHtml(s.name || s.spotify_name || '—')}</span>
+        </td>
+        <td style="font-size:13px;color:var(--ink3)">${escHtml(s.submitter_name || 'Anonymous')}</td>
+        <td style="font-size:13px;color:var(--ink3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml((s.note || '').substring(0, 60) + (s.note?.length > 60 ? '…' : ''))}</td>
+        <td><span class="badge badge-${s.status || 'pending'}">${s.status || 'pending'}</span></td>
+        <td onclick="event.stopPropagation()">
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-success btn-sm" onclick="approveArtistSubmission(${i})">Approve</button>
+            <button class="btn btn-danger btn-sm" onclick="rejectSubmission('submissions_artists', ${i})">Decline</button>
+          </div>
+        </td>`;
+      tr.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        openArtistSubmissionDetail(s, i);
+      });
+      tbody.appendChild(tr);
+    });
+
+    // Playlists submissions
+    const plSubs = await sheetsRead('submissions_playlists');
+    const plTbody = document.getElementById('admin-playlist-subs-body');
+    document.getElementById('admin-playlist-subs-loading').style.display = 'none';
+    const plEmpty = document.getElementById('admin-playlist-subs-empty');
+    const plTable = document.getElementById('admin-playlist-subs-table');
+    if (!plSubs.length) { plEmpty.style.display = 'block'; plTable.style.display = 'none'; return; }
+    plEmpty.style.display = 'none';
+    plTable.style.display = 'table';
+    plTbody.innerHTML = '';
+    plSubs.forEach((s, i) => {
+      const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      tr.title = 'Click to view full details';
+      tr.innerHTML = `
+        <td>
+          <span style="font-weight:600;border-bottom:1px dashed var(--border-strong)">${escHtml(s.description || s.spotify_id || '—')}</span>
+        </td>
+        <td style="font-size:13px;color:var(--ink3)">${escHtml(s.genre || '—')}</td>
+        <td style="font-size:13px;color:var(--ink3)">${escHtml(s.submitter_name || 'Anonymous')}</td>
+        <td><span class="badge badge-${s.status || 'pending'}">${s.status || 'pending'}</span></td>
+        <td onclick="event.stopPropagation()">
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-success btn-sm" onclick="approvePlaylistSubmission(${i})">Approve</button>
+            <button class="btn btn-danger btn-sm" onclick="rejectSubmission('submissions_playlists', ${i})">Decline</button>
+          </div>
+        </td>`;
+      tr.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        openPlaylistSubmissionDetail(s, i);
+      });
+      plTbody.appendChild(tr);
+    });
+  } catch (err) { toast('⚠ ' + err.message); }
+}
+
+function openArtistSubmissionDetail(s, i) {
+  document.getElementById('submission-modal-title').textContent = s.name || s.spotify_name || 'Artist Submission';
+  document.getElementById('submission-modal-body').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:1rem">
+      ${s.spotify_id ? `
+        <div class="embed-wrap">
+          <iframe src="https://open.spotify.com/embed/artist/${escHtml(s.spotify_id)}?utm_source=generator"
+            width="100%" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy" style="border:none;border-radius:var(--radius)"></iframe>
+        </div>` : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        ${detailField('Spotify ID', s.spotify_id ? `<code style="font-size:12px">${escHtml(s.spotify_id)}</code>` : '—')}
+        ${detailField('Status', `<span class="badge badge-${s.status||'pending'}">${s.status||'pending'}</span>`)}
+        ${detailField('Submitted by', escHtml(s.submitter_name || 'Anonymous'))}
+        ${detailField('Email', s.submitter_email ? `<a href="mailto:${escHtml(s.submitter_email)}" style="color:var(--ink)">${escHtml(s.submitter_email)}</a>` : '—')}
+        ${detailField('Submitted', escHtml(s.timestamp || '—'))}
+      </div>
+      ${s.note ? detailField('Why they should be included', `<p style="color:var(--ink2);line-height:1.7">${escHtml(s.note)}</p>`) : ''}
+    </div>`;
+  document.getElementById('submission-modal-actions').innerHTML = `
+    <button class="btn btn-success" onclick="approveArtistSubmission(${i}); closeModal('submission-modal')">✓ Approve</button>
+    <button class="btn btn-danger" onclick="rejectSubmission('submissions_artists',${i}); closeModal('submission-modal')">Decline</button>
+    <button class="btn btn-outline" onclick="closeModal('submission-modal')" style="margin-left:auto">Close</button>`;
+  openModal('submission-modal');
+}
+
+function openPlaylistSubmissionDetail(s, i) {
+  const plId = extractSpotifyId(s.spotify_id || '', 'playlist');
+  document.getElementById('submission-modal-title').textContent = s.description || 'Playlist Submission';
+  document.getElementById('submission-modal-body').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:1rem">
+      ${plId ? `
+        <div class="embed-wrap">
+          <iframe src="https://open.spotify.com/embed/playlist/${plId}?utm_source=generator"
+            width="100%" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy" style="border:none;border-radius:var(--radius)"></iframe>
+        </div>` : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        ${detailField('Spotify ID', `<code style="font-size:12px">${escHtml(s.spotify_id||'—')}</code>`)}
+        ${detailField('Genre', escHtml(s.genre || '—'))}
+        ${detailField('Status', `<span class="badge badge-${s.status||'pending'}">${s.status||'pending'}</span>`)}
+        ${detailField('Submitted by', escHtml(s.submitter_name || 'Anonymous'))}
+        ${detailField('Email', s.submitter_email ? `<a href="mailto:${escHtml(s.submitter_email)}" style="color:var(--ink)">${escHtml(s.submitter_email)}</a>` : '—')}
+        ${s.submitter_social ? detailField('Website / Social', `<a href="${escHtml(s.submitter_social)}" target="_blank" rel="noopener" style="color:var(--ink);word-break:break-all">${escHtml(s.submitter_social)}</a>`) : ''}
+        ${detailField('Submitted', escHtml(s.timestamp || '—'))}
+      </div>
+      ${s.about ? detailField('About this playlist', `<p style="color:var(--ink2);line-height:1.7">${escHtml(s.about)}</p>`) : ''}
+    </div>`;
+  document.getElementById('submission-modal-actions').innerHTML = `
+    <button class="btn btn-success" onclick="approvePlaylistSubmission(${i}); closeModal('submission-modal')">✓ Approve</button>
+    <button class="btn btn-danger" onclick="rejectSubmission('submissions_playlists',${i}); closeModal('submission-modal')">Decline</button>
+    <button class="btn btn-outline" onclick="closeModal('submission-modal')" style="margin-left:auto">Close</button>`;
+  openModal('submission-modal');
+}
+
+function detailField(label, valueHtml) {
+  return `<div>
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">${label}</div>
+    <div style="font-size:14px;color:var(--ink)">${valueHtml}</div>
+  </div>`;
+}
+
+async function loadAdminArtists() {
+  try {
+    const artists = await sheetsRead('artists');
+    document.getElementById('admin-artists-loading').style.display = 'none';
+    const table = document.getElementById('admin-artists-table');
+    table.style.display = 'table';
+    const tbody = document.getElementById('admin-artists-body');
+    tbody.innerHTML = '';
+    artists.forEach((a, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${escHtml(a.name)}</strong><br><span style="font-size:12px;color:var(--ink3)">${escHtml(a.region||'')}</span></td>
+        <td><code style="font-size:11px">${escHtml(a.spotify_id||'—')}</code></td>
+        <td style="font-size:13px">${escHtml(a.genres||'—')}</td>
+        <td><span class="badge ${a.match_confidence==='auto'?'badge-approved':a.match_confidence==='ambiguous'?'badge-ambiguous':'badge-pending'}">${a.match_confidence||'manual'}</span></td>
+        <td><span class="badge badge-${a.status||'pending'}">${a.status||'pending'}</span></td>
+        <td><button class="btn btn-danger btn-sm" onclick="removeArtist(${i})">Remove</button></td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (err) { toast('⚠ ' + err.message); }
+}
+
+function adminFilterArtists() { loadAdminArtists(); }
+
+async function loadAdminPlaylists() {
+  try {
+    const playlists = await sheetsRead('playlists');
+    document.getElementById('admin-playlists-loading').style.display = 'none';
+    const table = document.getElementById('admin-playlists-table');
+    table.style.display = 'table';
+    const tbody = document.getElementById('admin-playlists-body');
+    tbody.innerHTML = '';
+    playlists.forEach((p, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${escHtml(p.name)}</strong></td>
+        <td><code style="font-size:11px">${escHtml(p.spotify_id||'—')}</code></td>
+        <td style="font-size:13px">${escHtml(p.genres||'—')}</td>
+        <td><span class="badge badge-${p.status||'pending'}">${p.status||'pending'}</span></td>
+        <td><button class="btn btn-danger btn-sm" onclick="removePlaylist(${i})">Remove</button></td>`;
+      tbody.appendChild(tr);
+    });
+  } catch {}
+}
+
+async function approveArtistSubmission(idx) {
+  const ok = await sheetsWrite('approve_artist_submission', { row: idx });
+  if (!CONFIG.WEBHOOK_URL) { toast('Demo mode: In production this would approve and move to artists sheet.'); return; }
+  if (ok) { toast('✓ Artist approved and added to directory'); await loadAdminData(); }
+}
+
+async function approvePlaylistSubmission(idx) {
+  const ok = await sheetsWrite('approve_playlist_submission', { row: idx });
+  if (!CONFIG.WEBHOOK_URL) { toast('Demo mode: In production this would approve and move to playlists sheet.'); return; }
+  if (ok) { toast('✓ Playlist approved'); await loadAdminData(); }
+}
+
+async function rejectSubmission(sheet, idx) {
+  const ok = await sheetsWrite('reject_submission', { sheet, row: idx });
+  if (!CONFIG.WEBHOOK_URL) { toast('Demo mode: In production this would mark as declined.'); return; }
+  if (ok) { toast('Submission declined'); await loadAdminData(); }
+}
+
+async function removeArtist(idx) {
+  if (!confirm('Remove this artist from the directory?')) return;
+  await sheetsWrite('remove_artist', { row: idx });
+  toast('Artist removed');
+  await loadAdminArtists();
+}
+
+async function removePlaylist(idx) {
+  if (!confirm('Remove this playlist?')) return;
+  await sheetsWrite('remove_playlist', { row: idx });
+  toast('Playlist removed');
+  await loadAdminPlaylists();
+}
+
+// ════════════════════════════════════════
+//  IMPORT CSV
+// ════════════════════════════════════════
+async function handleImportFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const text = await file.text();
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const header = lines[0].toLowerCase();
+  const nameCol = header.split(',').findIndex(h => h.includes('name') || h.includes('artist'));
+  const dataLines = nameCol >= 0 ? lines.slice(1) : lines;
+
+  const names = dataLines.map(l => {
+    const cols = l.split(',');
+    return (nameCol >= 0 ? cols[nameCol] : cols[0]).replace(/"/g,'').trim();
+  }).filter(Boolean);
+
+  document.getElementById('import-preview').style.display = 'block';
+  const tbody = document.getElementById('import-body');
+  tbody.innerHTML = '<tr><td colspan="5" class="loading-center"><div class="loading-ring"></div></td></tr>';
+  importRows = [];
+
+  for (const name of names) {
+    try {
+      const data = await spotifyFetch(`/search?q=${encodeURIComponent(name)}&type=artist&limit=3`);
+      const artists = data?.artists?.items || [];
+      const top = artists[0];
+      const confidence = top
+        ? (top.name.toLowerCase() === name.toLowerCase() ? 'auto' : 'ambiguous')
+        : 'not-found';
+      importRows.push({ csvName: name, match: top || null, confidence, include: confidence === 'auto' });
+    } catch {
+      importRows.push({ csvName: name, match: null, confidence: 'error', include: false });
+    }
+  }
+
+  tbody.innerHTML = '';
+  importRows.forEach((row, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escHtml(row.csvName)}</td>
+      <td>${row.match ? escHtml(row.match.name) : '<em style="color:var(--ink3)">Not found</em>'}</td>
+      <td><span class="badge badge-${row.confidence === 'auto' ? 'approved' : row.confidence === 'ambiguous' ? 'ambiguous' : 'rejected'}">${row.confidence}</span></td>
+      <td style="font-size:12px;color:var(--ink3)">${row.match ? (row.match.genres||[]).slice(0,2).join(', ') : '—'}</td>
+      <td><input type="checkbox" ${row.include ? 'checked' : ''} onchange="importRows[${i}].include = this.checked" style="width:16px;height:16px;cursor:pointer"></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function confirmImport() {
+  const toImport = importRows.filter(r => r.include && r.match);
+  if (!toImport.length) { toast('No artists selected'); return; }
+
+  for (const row of toImport) {
+    await sheetsWrite('add_artist', {
+      name: row.match.name,
+      spotify_id: row.match.id,
+      genres: (row.match.genres || []).join(', '),
+      status: 'approved',
+      match_confidence: row.confidence,
+    });
+  }
+
+  if (!CONFIG.WEBHOOK_URL) {
+    toast(`Demo mode: ${toImport.length} artists would be imported. Configure webhook to persist.`);
+  } else {
+    toast(`✓ ${toImport.length} artists imported`);
+  }
+  document.getElementById('import-preview').style.display = 'none';
+}
+
+// ════════════════════════════════════════
+//  ADD ARTIST / PLAYLIST (admin)
+// ════════════════════════════════════════
+function openAddArtistModal() { openModal('add-artist-modal'); }
+function openAddPlaylistModal() { openModal('add-playlist-modal'); }
+
+async function adminAddArtist(e) {
+  e.preventDefault();
+  const id = document.getElementById('admin-add-artist-id').value;
+  const name = document.getElementById('admin-artist-search-input').value;
+  if (!id) { toast('Please select an artist from the search'); return; }
+  await sheetsWrite('add_artist', {
+    name, spotify_id: id,
+    genres: document.getElementById('admin-add-genres').value,
+    region: document.getElementById('admin-add-region').value,
+    status: 'approved', match_confidence: 'manual',
+  });
+  closeModal('add-artist-modal');
+  if (!CONFIG.WEBHOOK_URL) toast('Demo: Artist added (configure webhook to persist)');
+  else { toast('✓ Artist added'); loadAdminArtists(); }
+}
+
+async function adminAddPlaylist(e) {
+  e.preventDefault();
+  const id = extractSpotifyId(document.getElementById('admin-pl-url').value, 'playlist');
+  if (!id) { toast('Invalid playlist URL'); return; }
+  await sheetsWrite('add_playlist', {
+    name: document.getElementById('admin-pl-name').value,
+    spotify_id: id,
+    genres: document.getElementById('admin-pl-genres').value,
+    curator: document.getElementById('admin-pl-curator').value,
+    status: 'approved',
+  });
+  closeModal('add-playlist-modal');
+  if (!CONFIG.WEBHOOK_URL) toast('Demo: Playlist added (configure webhook to persist)');
+  else { toast('✓ Playlist added'); loadAdminPlaylists(); }
+}
+
+// ════════════════════════════════════════
+//  SETTINGS
+// ════════════════════════════════════════
+function loadSettingsFields() {
+  document.getElementById('cfg-sheet-id').value = localStorage.getItem('cfg_sheet_id') || '';
+  document.getElementById('cfg-gapi-key').value = localStorage.getItem('cfg_gapi_key') || '';
+  document.getElementById('cfg-spotify-id').value = localStorage.getItem('cfg_spotify_id') || '';
+  document.getElementById('cfg-webhook').value = localStorage.getItem('cfg_webhook') || '';
+}
+
+function saveSettings() {
+  const sheetId = document.getElementById('cfg-sheet-id').value.trim();
+  const gapiKey = document.getElementById('cfg-gapi-key').value.trim();
+  const spotifyId = document.getElementById('cfg-spotify-id').value.trim();
+  const webhook = document.getElementById('cfg-webhook').value.trim();
+  const pw = document.getElementById('cfg-admin-pw').value;
+
+  if (sheetId) { localStorage.setItem('cfg_sheet_id', sheetId); CONFIG.SHEET_ID = sheetId; }
+  if (gapiKey) { localStorage.setItem('cfg_gapi_key', gapiKey); CONFIG.GAPI_KEY = gapiKey; }
+  if (spotifyId) { localStorage.setItem('cfg_spotify_id', spotifyId); CONFIG.SPOTIFY_CLIENT_ID = spotifyId; }
+  if (webhook) { localStorage.setItem('cfg_webhook', webhook); CONFIG.WEBHOOK_URL = webhook; }
+  if (pw) { localStorage.setItem('cfg_admin_pw', pw); CONFIG.ADMIN_PASSWORD = pw; }
+
+  toast('✓ Settings saved');
+}
+
+// ════════════════════════════════════════
+//  ADMIN SECTIONS + TABS
+// ════════════════════════════════════════
+function adminSection(id) {
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.admin-nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('asec-' + id).classList.add('active');
+  document.querySelector(`[data-asec="${id}"]`).classList.add('active');
+}
+
+function switchTab(context, tabId) {
+  const prefix = context === 'submit' ? 'submit-tab-' : 'admin-tab-';
+  document.querySelectorAll(`[id^="${prefix}"]`).forEach(p => p.classList.remove('active'));
+  document.getElementById(prefix + tabId).classList.add('active');
+
+  const btnContext = context === 'submit' ? '#page-submit .tab-btn' : '#asec-submissions .tab-btn, #asec-artists .tab-btn, #admin-tab-' + tabId;
+  const row = context === 'submit' ? document.querySelector('#page-submit .tab-row') : document.querySelector('#asec-submissions .tab-row');
+  if (row) {
+    row.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === tabId);
+    });
+  }
+}
+
+// ════════════════════════════════════════
+//  MODALS
+// ════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function extractSpotifyId(input, type) {
+  if (!input) return '';
+  // Full URL: https://open.spotify.com/playlist/37i9dQZF1DX...
+  const urlMatch = input.match(/spotify\.com\/(playlist|album|artist|track)\/([A-Za-z0-9]+)/);
+  if (urlMatch) return urlMatch[2];
+  // spotify:playlist:id
+  const uriMatch = input.match(/spotify:[a-z]+:([A-Za-z0-9]+)/);
+  if (uriMatch) return uriMatch[1];
+  // Raw ID (22 chars, base62)
+  if (/^[A-Za-z0-9]{22}$/.test(input.trim())) return input.trim();
+  return '';
+}
+
+function scrollToGenres() {
+  document.getElementById('genre-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════
+(async function init() {
+  // Handle Spotify PKCE redirect
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('code')) {
+    await exchangePKCECode(urlParams.get('code'));
+  }
+
+  // Load data on startup for the explorer page
+  await loadAllData();
+})();
+</script>
+</body>
+</html>
