@@ -1070,72 +1070,107 @@ footer a { color: var(--ink3); }
               <summary style="cursor:pointer;font-size:14px;font-weight:700;color:var(--ink);margin-bottom:8px">Show Apps Script code ▾</summary>
               <pre style="background:var(--bg2);border:1px solid var(--border-strong);border-radius:var(--radius);padding:1rem;font-size:12px;overflow-x:auto;white-space:pre;line-height:1.6;margin-top:8px"><code>const SHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
 
-function doPost(e) {
-  const data = JSON.parse(e.postData.contents);
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  let result = { ok: true };
-
-  if (data.action === 'submit_artist') {
-    const sheet = ss.getSheetByName('submissions_artists');
-    sheet.appendRow([data.name, data.spotify_id, data.spotify_name,
-      data.note, data.submitter_name, data.submitter_email,
-      data.timestamp, 'pending']);
-
-  } else if (data.action === 'submit_playlist') {
-    const sheet = ss.getSheetByName('submissions_playlists');
-    sheet.appendRow([data.spotify_id, data.description, data.about || '', data.genre,
-      data.submitter_name, data.submitter_email, data.submitter_social || '',
-      data.timestamp, 'pending']);
-
-  } else if (data.action === 'approve_artist_submission') {
-    const subSheet = ss.getSheetByName('submissions_artists');
-    const row = subSheet.getRange(data.row + 2, 1, 1, 8).getValues()[0];
-    subSheet.getRange(data.row + 2, 8).setValue('approved');
-    const artSheet = ss.getSheetByName('artists');
-    artSheet.appendRow([row[0], row[1], '', '', '', 'approved', 'manual']);
-
-  } else if (data.action === 'approve_playlist_submission') {
-    const subSheet = ss.getSheetByName('submissions_playlists');
-    const row = subSheet.getRange(data.row + 2, 1, 1, 7).getValues()[0];
-    subSheet.getRange(data.row + 2, 7).setValue('approved');
-    const plSheet = ss.getSheetByName('playlists');
-    plSheet.appendRow([row[1], row[0], row[2], row[3], '', 'approved']);
-
-  } else if (data.action === 'reject_submission') {
-    const sheet = ss.getSheetByName(data.sheet);
-    const lastCol = sheet.getLastColumn();
-    sheet.getRange(data.row + 2, lastCol).setValue('rejected');
-
-  } else if (data.action === 'add_artist') {
-    const sheet = ss.getSheetByName('artists');
-    sheet.appendRow([data.name, data.spotify_id, data.genres,
-      data.region || '', data.bio || '', data.status, data.match_confidence]);
-
-  } else if (data.action === 'add_playlist') {
-    const sheet = ss.getSheetByName('playlists');
-    sheet.appendRow([data.name, data.spotify_id, data.genres,
-      data.curator || '', data.description || '', data.status]);
-
-  } else if (data.action === 'remove_artist') {
-    const sheet = ss.getSheetByName('artists');
-    sheet.deleteRow(data.row + 2);
-
-  } else if (data.action === 'remove_playlist') {
-    const sheet = ss.getSheetByName('playlists');
-    sheet.deleteRow(data.row + 2);
-
-  } else {
-    result = { ok: false, error: 'Unknown action' };
-  }
-
-  return ContentService
-    .createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
+// ── CORS headers added to every response ──
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
 }
 
-// Allow CORS preflight
+function makeResponse(data) {
+  const output = ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+  return output;
+}
+
+// Handle preflight OPTIONS request
+function doOptions(e) {
+  return makeResponse({ ok: true });
+}
+
+// Handle GET (health check)
 function doGet(e) {
-  return ContentService.createTextOutput('OK');
+  return makeResponse({ ok: true, message: 'AME webhook active' });
+}
+
+// Handle POST — all write actions
+function doPost(e) {
+  try {
+    const raw = e.postData.contents;
+    const data = JSON.parse(raw);
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    let result = { ok: true };
+
+    if (data.action === 'submit_artist') {
+      const sheet = ss.getSheetByName('submissions_artists');
+      sheet.appendRow([
+        data.name, data.spotify_id, data.spotify_name,
+        data.note, data.submitter_name, data.submitter_email,
+        data.timestamp, 'pending'
+      ]);
+
+    } else if (data.action === 'submit_playlist') {
+      const sheet = ss.getSheetByName('submissions_playlists');
+      sheet.appendRow([
+        data.spotify_id, data.description, data.about || '',
+        data.genre, data.submitter_name, data.submitter_email,
+        data.submitter_social || '', data.timestamp, 'pending'
+      ]);
+
+    } else if (data.action === 'approve_artist_submission') {
+      const subSheet = ss.getSheetByName('submissions_artists');
+      const row = subSheet.getRange(data.row + 2, 1, 1, 8).getValues()[0];
+      subSheet.getRange(data.row + 2, 8).setValue('approved');
+      const artSheet = ss.getSheetByName('artists');
+      artSheet.appendRow([row[0], row[1], '', '', '', 'approved', 'manual']);
+
+    } else if (data.action === 'approve_playlist_submission') {
+      const subSheet = ss.getSheetByName('submissions_playlists');
+      const row = subSheet.getRange(data.row + 2, 1, 1, 9).getValues()[0];
+      subSheet.getRange(data.row + 2, 9).setValue('approved');
+      const plSheet = ss.getSheetByName('playlists');
+      // name=description, spotify_id, genres=genre, curator=submitter_name, description=about
+      plSheet.appendRow([row[1], row[0], row[3], row[4], row[2], 'approved']);
+
+    } else if (data.action === 'reject_submission') {
+      const sheet = ss.getSheetByName(data.sheet);
+      const lastCol = sheet.getLastColumn();
+      sheet.getRange(data.row + 2, lastCol).setValue('rejected');
+
+    } else if (data.action === 'add_artist') {
+      const sheet = ss.getSheetByName('artists');
+      sheet.appendRow([
+        data.name, data.spotify_id, data.genres,
+        data.region || '', data.bio || '', data.status, data.match_confidence
+      ]);
+
+    } else if (data.action === 'add_playlist') {
+      const sheet = ss.getSheetByName('playlists');
+      sheet.appendRow([
+        data.name, data.spotify_id, data.genres,
+        data.curator || '', data.description || '', data.status
+      ]);
+
+    } else if (data.action === 'remove_artist') {
+      const sheet = ss.getSheetByName('artists');
+      sheet.deleteRow(data.row + 2);
+
+    } else if (data.action === 'remove_playlist') {
+      const sheet = ss.getSheetByName('playlists');
+      sheet.deleteRow(data.row + 2);
+
+    } else {
+      result = { ok: false, error: 'Unknown action: ' + data.action };
+    }
+
+    return makeResponse(result);
+
+  } catch (err) {
+    return makeResponse({ ok: false, error: err.toString() });
+  }
 }</code></pre>
             </details>
           </div>
@@ -1500,12 +1535,23 @@ async function sheetsWrite(action, payload) {
     toast('⚠ No webhook URL set. Configure in Admin > Settings to enable writes.');
     return false;
   }
-  const resp = await fetch(CONFIG.WEBHOOK_URL, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ action, ...payload })
-  });
-  return resp.ok;
+  try {
+    // Send as text/plain to avoid CORS preflight OPTIONS request.
+    // Apps Script receives it via e.postData.contents and parses the JSON itself.
+    const resp = await fetch(CONFIG.WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action, ...payload }),
+    });
+    // Apps Script redirects (302) after execution — follow it and check the final response
+    if (resp.ok || resp.type === 'opaqueredirect') return true;
+    console.error('Webhook error:', resp.status, await resp.text().catch(() => ''));
+    return false;
+  } catch (err) {
+    console.error('sheetsWrite failed:', err);
+    toast('⚠ Could not reach webhook. Check the URL in Settings.');
+    return false;
+  }
 }
 
 // ════════════════════════════════════════
