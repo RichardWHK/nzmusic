@@ -174,7 +174,6 @@ nav {
   background: var(--bg2); position: relative; overflow: hidden;
   padding: 3rem;
   background-size: cover; background-position: center;
-  transition: background-image 0s, opacity 0.8s;
 }
 .hero-right::before {
   content: '';
@@ -190,7 +189,9 @@ nav {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
   width: 100%; height: 100%;
   z-index: 0;
+  transition: opacity 1.2s ease;
 }
+.hero-right.has-art #hero-wave { opacity: 0; }
 .hero-ring-wrap { position: relative; z-index: 2; }
 .hero-right-credit {
   position: absolute; bottom: 1rem; left: 1.2rem;
@@ -1785,13 +1786,14 @@ async function setHeroArt() {
     const data = await spotifyFetch('/artists/' + artist.spotify_id);
     const img = data?.images?.[0]?.url;
     if (!img) return;
-    el.style.opacity = '0';
-    setTimeout(() => {
+    // Preload then swap — no whole-panel fade, just image crossfade via ::before scrim
+    const preload = new Image();
+    preload.onload = () => {
       el.style.backgroundImage = 'url(' + img + ')';
-      el.classList.add('has-art');
-      el.style.opacity = '1';
+      el.classList.add('has-art'); // fades canvas out, scrim in
       if (credit) credit.textContent = artist.name;
-    }, 400);
+    };
+    preload.src = img;
   } catch { /* skip */ }
 }
 
