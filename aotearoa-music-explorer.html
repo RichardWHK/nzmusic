@@ -173,14 +173,39 @@ nav {
   display: flex; align-items: center; justify-content: center;
   background: var(--bg2); position: relative; overflow: hidden;
   padding: 3rem;
+  background-size: cover; background-position: center;
+  transition: background-image 0s, opacity 0.8s;
 }
+.hero-right::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(245,245,240,0.58);
+  pointer-events: none; z-index: 1;
+  opacity: 0; /* only visible once album art loads */
+  transition: opacity 1s;
+}
+.hero-right.has-art::before { opacity: 1; }
+[data-theme="dark"] .hero-right::before { background: rgba(10,10,10,0.65); }
+#hero-wave {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+}
+.hero-ring-wrap { position: relative; z-index: 2; }
+.hero-right-credit {
+  position: absolute; bottom: 1rem; left: 1.2rem;
+  font-size: 10px; font-family: var(--font-body);
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(10,10,10,0.35); pointer-events: none; z-index: 3;
+}
+[data-theme="dark"] .hero-right-credit { color: rgba(245,245,240,0.35); }
 .hero-ring-wrap {
-  position: relative; display: flex;
-  align-items: center; justify-content: center;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
 }
 /* Animated spiral — hero graphic */
 .ring-svg {
-  width: min(360px, 80%);
+  width: 80%; max-width: 360px;
   animation: ringPulse 6s ease-in-out infinite;
 }
 @keyframes ringPulse {
@@ -402,7 +427,7 @@ nav {
 
 /* ── MODAL ── */
 .modal-overlay {
-  position: fixed; inset: 0; z-index: 500;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 500;
   background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center; padding: 1rem;
   opacity: 0; pointer-events: none; transition: opacity 0.2s;
@@ -650,7 +675,6 @@ footer a { color: var(--ink3); }
   <!-- Hero -->
   <div class="hero">
     <div class="hero-left">
-      <p class="hero-eyebrow">Discover Aotearoa</p>
       <h1 class="hero-h1">
         <em>Explore</em>
         <em>Aotearoa</em>
@@ -660,12 +684,13 @@ footer a { color: var(--ink3); }
       <div class="hero-actions">
         <button class="btn btn-primary" onclick="scrollToGenres()">Browse by Genre</button>
         <button class="btn btn-outline" onclick="showPage('artists')">All Artists</button>
+        <button class="btn btn-outline" onclick="showPage('playlists')">Playlists</button>
       </div>
     </div>
-    <div class="hero-right">
+    <div class="hero-right" id="hero-right">
+      <canvas id="hero-wave" aria-hidden="true"></canvas>
       <div class="hero-ring-wrap">
         <svg class="ring-svg" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Squiggly outward spiral -->
           <path d="
             M150,150
             C152,147 155,145 158,145
@@ -688,13 +713,14 @@ footer a { color: var(--ink3); }
             C242,63 278,124 263,182
           " stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none"/>
         </svg>
-        <div class="hero-dice" style="position:absolute;bottom:0;right:0">
+        <div class="hero-dice">
           <button class="dice-btn" onclick="rollDice()" title="Random NZ discovery">
             <span class="dice-icon">⚄</span>
             <span>Roll the dice</span>
           </button>
         </div>
       </div>
+      <div class="hero-right-credit" id="hero-credit"></div>
     </div>
   </div>
 
@@ -1356,6 +1382,7 @@ function toggleTheme() {
   icon.innerHTML = isDark
     ? `<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>`
     : `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
+  const nowDark = !isDark;
 }
 (function initTheme() {
   const saved = localStorage.getItem('theme') || 'light';
@@ -1510,15 +1537,38 @@ function showConnectBanner() {
   if (existing) return;
   const banner = document.createElement('div');
   banner.id = 'connect-banner';
-  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:800;background:var(--ink);color:var(--accent-inv);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;border-top:2px solid var(--border-strong)';
+  banner.style.cssText = `
+    position: fixed;
+    bottom: 0;
+    left: auto;
+    right: 2rem;
+    transform: none;
+    z-index: 800;
+    background: var(--ink);
+    color: var(--accent-inv);
+    padding: 1.2rem 2rem 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
+    white-space: nowrap;
+    animation: bannerRise 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+  `;
   banner.innerHTML = `
+    <style>
+      @keyframes bannerRise {
+        from { transform: translateY(100%); }
+        to   { transform: translateY(0); }
+      }
+    </style>
     <div>
-      <strong style="font-family:var(--font-display);letter-spacing:1px;font-size:1.1rem">Connect Spotify</strong>
-      <p style="font-size:13px;opacity:0.7;margin-top:2px">Required to load artist and track data from the Spotify catalog</p>
+      <strong style="font-family:var(--font-display);letter-spacing:1px;font-size:1.1rem;display:block">Connect Spotify</strong>
+      <span style="font-size:12px;opacity:0.6">Required to load NZ artist data</span>
     </div>
     <div style="display:flex;gap:8px;flex-shrink:0">
-      <button class="btn btn-outline btn-sm" style="color:var(--accent-inv);border-color:rgba(255,255,255,0.3)" onclick="document.getElementById('connect-banner').remove()">Later</button>
-      <button class="btn btn-primary btn-sm" style="background:#1DB954;border-color:#1DB954;color:#000" onclick="connectSpotify()">Connect with Spotify</button>
+      <button class="btn btn-outline btn-sm" style="color:var(--accent-inv);border-color:rgba(255,255,255,0.25)" onclick="document.getElementById('connect-banner').remove()">Later</button>
+      <button class="btn btn-primary btn-sm" style="background:#1DB954;border-color:#1DB954;color:#000;font-weight:700" onclick="connectSpotify()">Connect with Spotify</button>
     </div>`;
   document.body.appendChild(banner);
 }
@@ -1635,12 +1685,105 @@ async function loadAllData() {
     renderArtistsPage();
     renderPlaylistsPage();
     populateGenreSelects();
+    startHeroCycle();
   } catch (err) {
     console.error('[AME] loadAllData error:', err);
     toast('⚠ ' + err.message);
   } finally {
     document.getElementById('explorer-loading').style.display = 'none';
   }
+}
+
+// ════════════════════════════════════════
+//  HERO WAVE ANIMATION
+// ════════════════════════════════════════
+(function initWave() {
+  const canvas = document.getElementById('hero-wave');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let w, h, raf;
+
+  function resize() {
+    const parent = canvas.parentElement;
+    w = canvas.width  = parent ? parent.offsetWidth  : 600;
+    h = canvas.height = parent ? parent.offsetHeight : 500;
+  }
+
+  function getColors() {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return dark
+      ? ['rgba(5,40,20,0.95)', 'rgba(2,30,15,0.85)', 'rgba(1,20,10,1)', 'rgba(10,60,30,0.8)']
+      : ['rgba(40,130,70,0.85)', 'rgba(20,110,50,0.75)', 'rgba(60,150,80,0.9)', 'rgba(15,90,40,0.7)'];
+  }
+
+  const waves = [
+    { amp: 38, period: 0.012, speed: 0.018, offset: 0,   yFrac: 0.35 },
+    { amp: 28, period: 0.018, speed: 0.013, offset: 2.1, yFrac: 0.52 },
+    { amp: 44, period: 0.009, speed: 0.009, offset: 4.4, yFrac: 0.68 },
+    { amp: 20, period: 0.022, speed: 0.022, offset: 1.2, yFrac: 0.80 },
+  ];
+
+  let t = 0;
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    const bg = document.documentElement.getAttribute('data-theme') === 'dark'
+      ? '#021a09' : '#2d8a4e';
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+
+    const colors = getColors();
+    waves.forEach((wave, i) => {
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      for (let x = 0; x <= w; x += 2) {
+        const y = wave.yFrac * h + Math.sin(x * wave.period + t * wave.speed + wave.offset) * wave.amp
+                + Math.sin(x * wave.period * 0.6 + t * wave.speed * 1.3 + wave.offset) * wave.amp * 0.4;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(w, h);
+      ctx.closePath();
+      ctx.fillStyle = colors[i];
+      ctx.fill();
+    });
+    t++;
+    raf = requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  draw();
+})();
+
+// ════════════════════════════════════════
+//  HERO ALBUM ART
+// ════════════════════════════════════════
+let heroCycleTimer = null;
+
+function startHeroCycle() {
+  clearInterval(heroCycleTimer);
+  setHeroArt();
+  heroCycleTimer = setInterval(setHeroArt, 9000);
+}
+
+async function setHeroArt() {
+  const el = document.getElementById('hero-right');
+  const credit = document.getElementById('hero-credit');
+  if (!el) return;
+  const pool = allArtists.filter(a => a.spotify_id);
+  if (!pool.length) return;
+  const artist = pool[Math.floor(Math.random() * pool.length)];
+  try {
+    const data = await spotifyFetch('/artists/' + artist.spotify_id);
+    const img = data?.images?.[0]?.url;
+    if (!img) return;
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.style.backgroundImage = 'url(' + img + ')';
+      el.classList.add('has-art');
+      el.style.opacity = '1';
+      if (credit) credit.textContent = artist.name;
+    }, 400);
+  } catch { /* skip */ }
 }
 
 // ════════════════════════════════════════
@@ -2670,8 +2813,6 @@ function scrollToGenres() {
   if (urlParams.get('code')) {
     await exchangePKCECode(urlParams.get('code'));
   }
-
-  // Load data on startup for the explorer page
   await loadAllData();
 })();
 </script>
