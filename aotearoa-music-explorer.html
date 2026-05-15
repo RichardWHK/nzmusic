@@ -2848,7 +2848,7 @@ function scrollToGenres() {
 //  INIT
 // ════════════════════════════════════════
 (async function init() {
-  // Clear any stale Spotify tokens so we get a fresh auth
+  // Clear any stale Spotify tokens
   const storedExpiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
   if (storedExpiry && Date.now() > storedExpiry) {
     localStorage.removeItem('sp_access_token');
@@ -2862,7 +2862,15 @@ function scrollToGenres() {
   if (urlParams.get('code')) {
     await exchangePKCECode(urlParams.get('code'));
   }
+
   await loadAllData();
+
+  // Show connect banner if still no Spotify token after load
+  const hasToken = localStorage.getItem('sp_access_token') &&
+    parseInt(localStorage.getItem('sp_token_expiry') || '0') > Date.now();
+  if (!hasToken) {
+    setTimeout(showConnectBanner, 1200); // slight delay so page loads first
+  }
 })();
 </script>
 </body>
