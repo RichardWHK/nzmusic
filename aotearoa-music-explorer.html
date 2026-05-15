@@ -1701,7 +1701,7 @@ async function loadAllData() {
 // ════════════════════════════════════════
 //  HERO WAVE ANIMATION
 // ════════════════════════════════════════
-(function initWave() {
+document.addEventListener('DOMContentLoaded', function initWave() {
   const canvas = document.getElementById('hero-wave');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -1756,7 +1756,7 @@ async function loadAllData() {
   resize();
   window.addEventListener('resize', resize);
   draw();
-})();
+});
 
 // ════════════════════════════════════════
 //  HERO ALBUM ART
