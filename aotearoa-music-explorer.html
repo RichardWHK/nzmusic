@@ -2,14 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<!-- Google Tag Manager -->
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-PJNBDDVZ');</script>
-<!-- End Google Tag Manager -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36' fill='none'%3E%3Crect width='36' height='36' rx='8' fill='%230a0a0a'/%3E%3Cpath d='M18 18 C18 18 20 15.5 22 15 C25 14.2 27.5 16.5 27 19.5 C26.3 23.5 22 26 18 25.5 C12.5 24.8 9 20 9.5 14.5 C10.2 7.5 16.5 3.5 23 4.5 C31 5.8 35 13 33.5 21 C31.8 30.5 23 35.5 13.5 33.5 C3 31.2 -1.5 21.5 1 11 C3.8 -1 15 -5 26 -1.5' stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Aotearoa Music Explorer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -180,7 +172,7 @@ nav {
 .hero-right {
   display: flex; align-items: center; justify-content: center;
   background: var(--bg2); position: relative; overflow: hidden;
-  padding: 3rem;
+  padding: 3rem; min-height: 400px;
   background-size: cover; background-position: center;
 }
 .hero-right::before {
@@ -220,6 +212,10 @@ nav {
 @keyframes ringPulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.03); }
+}
+@keyframes bannerRise {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
 }
 .hero-dice {
   position: absolute;
@@ -650,10 +646,6 @@ footer a { color: var(--ink3); }
 </style>
 </head>
 <body>
-<!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PJNBDDVZ"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->
 
 <!-- ═══════════════ NAV ═══════════════ -->
 <nav id="main-nav">
@@ -1560,12 +1552,6 @@ function showConnectBanner() {
     animation: bannerRise 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
   `;
   banner.innerHTML = `
-    <style>
-      @keyframes bannerRise {
-        from { transform: translateY(100%); }
-        to   { transform: translateY(0); }
-      }
-    </style>
     <div>
       <strong style="font-family:var(--font-display);letter-spacing:1px;font-size:1.1rem;display:block">Connect Spotify</strong>
       <span style="font-size:12px;opacity:0.6">Required to load NZ artist data</span>
@@ -1705,12 +1691,13 @@ document.addEventListener('DOMContentLoaded', function initWave() {
   const canvas = document.getElementById('hero-wave');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  let w, h, raf;
+  let w, h;
 
   function resize() {
     const parent = canvas.parentElement;
-    w = canvas.width  = parent ? parent.offsetWidth  : 600;
-    h = canvas.height = parent ? parent.offsetHeight : 500;
+    // Use offsetWidth/Height with fallbacks; if still 0 use window dimensions
+    w = canvas.width  = (parent && parent.offsetWidth  > 0) ? parent.offsetWidth  : window.innerWidth / 2;
+    h = canvas.height = (parent && parent.offsetHeight > 0) ? parent.offsetHeight : 500;
   }
 
   function getColors() {
@@ -1755,6 +1742,8 @@ document.addEventListener('DOMContentLoaded', function initWave() {
 
   resize();
   window.addEventListener('resize', resize);
+  // Re-check dimensions after layout settles
+  setTimeout(resize, 100);
   draw();
 });
 
@@ -1763,7 +1752,7 @@ document.addEventListener('DOMContentLoaded', function initWave() {
 // ════════════════════════════════════════
 let heroCycleTimer = null;
 
-function startHeroCycle() {
+async function startHeroCycle() {
   clearInterval(heroCycleTimer);
   setHeroArt();
   heroCycleTimer = setInterval(setHeroArt, 9000);
@@ -2298,7 +2287,7 @@ function initAdmin() {
   else { document.getElementById('admin-login-gate').style.display = 'flex'; document.getElementById('admin-dashboard').style.display = 'none'; }
 }
 
-function adminLogin() {
+async function adminLogin() {
   const pw = document.getElementById('admin-password-input').value;
   // Reload config in case it was updated via Settings
   CONFIG.ADMIN_PASSWORD = localStorage.getItem('cfg_admin_pw') || 'aotearoa2025';
@@ -2320,7 +2309,7 @@ function adminLogout() {
   document.getElementById('admin-login-gate').style.display = 'flex';
 }
 
-function showAdminDashboard() {
+async function showAdminDashboard() {
   document.getElementById('admin-login-gate').style.display = 'none';
   document.getElementById('admin-dashboard').style.display = 'block';
   loadAdminData();
@@ -2712,7 +2701,7 @@ async function adminAddPlaylist(e) {
 // ════════════════════════════════════════
 //  SETTINGS
 // ════════════════════════════════════════
-function loadSettingsFields() {
+async function loadSettingsFields() {
   const el = document.getElementById('config-status');
   if (!el) return;
   const rows = [
@@ -2731,7 +2720,9 @@ function loadSettingsFields() {
       <span style="font-size:13px;text-align:right">${display}</span>
     </div>`;
   }).join('');
-} {
+}
+
+async function runDiagnostics() {
   const out = document.getElementById('diagnostics-output');
   out.style.display = 'block';
   out.textContent = 'Running…\n';
@@ -2857,6 +2848,15 @@ function scrollToGenres() {
 //  INIT
 // ════════════════════════════════════════
 (async function init() {
+  // Clear any stale Spotify tokens so we get a fresh auth
+  const storedExpiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
+  if (storedExpiry && Date.now() > storedExpiry) {
+    localStorage.removeItem('sp_access_token');
+    localStorage.removeItem('sp_token_expiry');
+    sessionStorage.removeItem('sp_token');
+    sessionStorage.removeItem('sp_token_exp');
+  }
+
   // Handle Spotify PKCE redirect
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('code')) {
