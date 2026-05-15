@@ -1006,7 +1006,10 @@ footer a { color: var(--ink3); }
         <div class="admin-section" id="asec-artists">
           <div class="section-header">
             <h2 class="section-title">Artists</h2>
-            <button class="btn btn-primary btn-sm" onclick="openAddArtistModal()">+ Add Artist</button>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-outline btn-sm" onclick="backfillGenres()" title="Fetch genres from Spotify for any artist missing them">↺ Backfill Genres</button>
+              <button class="btn btn-primary btn-sm" onclick="openAddArtistModal()">+ Add Artist</button>
+            </div>
           </div>
           <div class="search-wrap" style="margin-bottom:1rem">
             <input class="search-input" id="admin-artist-search" type="search" placeholder="Search artists…" oninput="adminFilterArtists()">
@@ -1192,6 +1195,11 @@ function doPost(e) {
         data.curator || '', data.description || '', data.status
       ]);
 
+    } else if (data.action === 'update_artist_genres') {
+      const sheet = ss.getSheetByName('artists');
+      // genres is column C (index 3), row is 0-indexed data row so +2 for header
+      sheet.getRange(data.row + 2, 3).setValue(data.genres);
+
     } else if (data.action === 'remove_artist') {
       const sheet = ss.getSheetByName('artists');
       sheet.deleteRow(data.row + 2);
@@ -1337,13 +1345,14 @@ function doPost(e) {
 ═══════════════════════════════════════ -->
 <script>
 // ════════════════════════════════════════
-//  CONFIG — edit these or set via Admin > Settings
+//  CONFIG — hardcode your values below
+//  OR set them via Admin > Settings
 // ════════════════════════════════════════
 const CONFIG = {
-  SPOTIFY_CLIENT_ID:  localStorage.getItem('cfg_spotify_id')  || 'YOUR_SPOTIFY_CLIENT_ID',
-  SHEET_ID:           localStorage.getItem('cfg_sheet_id')    || 'YOUR_GOOGLE_SHEET_ID',
-  GAPI_KEY:           localStorage.getItem('cfg_gapi_key')    || 'YOUR_GOOGLE_API_KEY',
-  WEBHOOK_URL:        localStorage.getItem('cfg_webhook')     || '',   // Google Apps Script web app
+  SPOTIFY_CLIENT_ID:  localStorage.getItem('cfg_spotify_id')  || 'PASTE_SPOTIFY_CLIENT_ID_HERE',
+  SHEET_ID:           localStorage.getItem('cfg_sheet_id')    || 'PASTE_GOOGLE_SHEET_ID_HERE',
+  GAPI_KEY:           localStorage.getItem('cfg_gapi_key')    || 'PASTE_GOOGLE_API_KEY_HERE',
+  WEBHOOK_URL:        localStorage.getItem('cfg_webhook')     || 'PASTE_APPS_SCRIPT_URL_HERE',
   ADMIN_PASSWORD:     localStorage.getItem('cfg_admin_pw')    || 'aotearoa2025',
 };
 
@@ -2479,6 +2488,44 @@ async function loadAdminArtists() {
 }
 
 function adminFilterArtists() { loadAdminArtists(); }
+
+async function backfillGenres() {
+  const btn = document.querySelector('[onclick="backfillGenres()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '↺ Fetching…'; }
+
+  let updated = 0, skipped = 0, failed = 0;
+  const artists = await sheetsRead('artists');
+  const missing = artists.filter(a => a.spotify_id && (!a.genres || !a.genres.trim()));
+
+  if (!missing.length) {
+    toast('All artists already have genres');
+    if (btn) { btn.disabled = false; btn.textContent = '↺ Backfill Genres'; }
+    return;
+  }
+
+  toast(`Fetching genres for ${missing.length} artists…`);
+
+  for (let i = 0; i < missing.length; i++) {
+    const a = missing[i];
+    if (btn) btn.textContent = `↺ ${i+1}/${missing.length}…`;
+    try {
+      const data = await spotifyFetch('/artists/' + a.spotify_id);
+      const genres = (data?.genres || []).join(', ');
+      if (genres) {
+        // Find row number in full artists array (1-indexed, +2 for header row)
+        const rowIdx = artists.findIndex(r => r.spotify_id === a.spotify_id);
+        await sheetsWrite('update_artist_genres', { row: rowIdx, genres });
+        updated++;
+      } else {
+        skipped++; // Spotify genuinely has no genres for this artist
+      }
+    } catch { failed++; }
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '↺ Backfill Genres'; }
+  toast(`✓ Updated ${updated} artists · ${skipped} had no Spotify genres · ${failed} failed`);
+  await loadAdminArtists();
+}
 
 async function loadAdminPlaylists() {
   try {
