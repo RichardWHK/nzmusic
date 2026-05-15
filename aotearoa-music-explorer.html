@@ -1147,9 +1147,16 @@ function doPost(e) {
 
     } else if (data.action === 'add_artist') {
       const sheet = ss.getSheetByName('artists');
+      // Column order must match sheet exactly:
+      // name | spotify_id | genres | region | bio | status | match_confidence
       sheet.appendRow([
-        data.name, data.spotify_id, data.genres,
-        data.region || '', data.bio || '', data.status, data.match_confidence
+        data.name,
+        data.spotify_id,
+        data.genres || '',
+        data.region || '',
+        data.bio || '',
+        data.status || 'approved',
+        data.match_confidence || 'manual'
       ]);
 
     } else if (data.action === 'add_playlist') {
@@ -1757,7 +1764,6 @@ function buildArtistCard(a) {
     </div>
     <div class="card-body">
       <div class="card-name">${escHtml(a.name)}</div>
-      <div class="card-meta">🇳🇿 ${escHtml(a.region || 'New Zealand')}</div>
       <div class="card-genres">
         ${genres.slice(0,3).map(g => `<span class="card-genre-tag">${escHtml(g)}</span>`).join('')}
       </div>
@@ -1845,16 +1851,13 @@ function renderPlaylistsPage() {
 async function openArtistModal(a) {
   document.getElementById('artist-modal-name').textContent = a.name;
   const body = document.getElementById('artist-modal-body');
+  const genreTags = parseGenres(a.genres).map(g => `<span class="card-genre-tag">${escHtml(g)}</span>`).join('');
   body.innerHTML = `
-    <div class="text-sm text-muted" style="margin-bottom:1rem">🇳🇿 ${escHtml(a.region || 'New Zealand')}</div>
-    <div class="card-genres" style="margin-bottom:1rem">
-      ${(a.genres||'').split(',').map(g => `<span class="card-genre-tag">${escHtml(g.trim())}</span>`).join('')}
-    </div>
+    ${genreTags ? `<div class="card-genres" style="margin-bottom:1rem">${genreTags}</div>` : ''}
     <div id="modal-artist-tracks" class="loading-center"><div class="loading-ring"></div><span>Loading top tracks…</span></div>`;
 
   openModal('artist-modal');
 
-  // Load top tracks embed
   if (a.spotify_id) {
     const tracksDiv = document.getElementById('modal-artist-tracks');
     tracksDiv.innerHTML = `
@@ -2439,20 +2442,35 @@ async function confirmImport() {
   const toImport = importRows.filter(r => r.include && r.match);
   if (!toImport.length) { toast('No artists selected'); return; }
 
+  let imported = 0;
+  const btn = document.querySelector('[onclick="confirmImport()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Importing…'; }
+
   for (const row of toImport) {
-    await sheetsWrite('add_artist', {
+    // Fetch full artist object from Spotify to get genres (search results sometimes omit them)
+    let genres = (row.match.genres || []).join(', ');
+    if (!genres) {
+      try {
+        const full = await spotifyFetch('/artists/' + row.match.id);
+        genres = (full?.genres || []).join(', ');
+      } catch {}
+    }
+    const ok = await sheetsWrite('add_artist', {
       name: row.match.name,
       spotify_id: row.match.id,
-      genres: (row.match.genres || []).join(', '),
+      genres,
       status: 'approved',
       match_confidence: row.confidence,
     });
+    if (ok !== false) imported++;
   }
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Import All'; }
 
   if (!CONFIG.WEBHOOK_URL) {
     toast(`Demo mode: ${toImport.length} artists would be imported. Configure webhook to persist.`);
   } else {
-    toast(`✓ ${toImport.length} artists imported`);
+    toast(`✓ ${imported} of ${toImport.length} artists imported`);
   }
   document.getElementById('import-preview').style.display = 'none';
 }
