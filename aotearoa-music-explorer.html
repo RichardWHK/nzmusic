@@ -1927,9 +1927,10 @@ function buildArtistCard(a) {
       </a>
     </div>`;
 
-  // Lazy-load Spotify artist image
+  // Lazy-load Spotify artist image — staggered to avoid rate limits
   if (a.spotify_id) {
-    loadArtistImage(a.spotify_id, `art-${imgId}`, card);
+    const delay = (document.querySelectorAll('.card').length % 12) * 120;
+    setTimeout(() => loadArtistImage(a.spotify_id, `art-${imgId}`, card), delay);
   }
   return card;
 }
@@ -2033,35 +2034,44 @@ async function rollDice() {
   result.innerHTML = '<div class="loading-center"><div class="loading-ring"></div><span>Rolling…</span></div>';
   panel.scrollIntoView({behavior:'smooth', block:'nearest'});
 
-  // Pick random type
-  const types = ['artist', 'track', 'playlist'];
+  // Only include types we have data for
+  const types = ['artist'];
+  if (allPlaylists.length > 0) types.push('playlist');
+  types.push('track'); // track always available if artists exist
   const type = types[Math.floor(Math.random() * types.length)];
 
   try {
     if (type === 'artist') {
       const a = allArtists[Math.floor(Math.random() * allArtists.length)];
+      if (!a?.spotify_id) { rollDice(); return; }
       result.innerHTML = `
         <div class="spotlight-label">Random NZ Artist</div>
         <div class="spotlight-name">${escHtml(a.name)}</div>
         <div class="card-genres" style="margin-bottom:1rem">
-          ${(a.genres||'').split(',').map(g=>`<span class="card-genre-tag">${escHtml(g.trim())}</span>`).join('')}
+          ${parseGenres(a.genres).map(g=>`<span class="card-genre-tag">${escHtml(g)}</span>`).join('')}
         </div>
         <div class="embed-wrap">
           <iframe src="https://open.spotify.com/embed/artist/${a.spotify_id}?utm_source=generator" width="100%" height="232" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
         </div>`;
+
     } else if (type === 'playlist') {
       const p = allPlaylists[Math.floor(Math.random() * allPlaylists.length)];
-      const plId = extractSpotifyId(p.spotify_id, 'playlist');
+      if (!p) { rollDice(); return; }
+      const plId = extractSpotifyId(p.spotify_id || '', 'playlist');
+      if (!plId) { rollDice(); return; }
       result.innerHTML = `
         <div class="spotlight-label">Random NZ Playlist</div>
         <div class="spotlight-name">${escHtml(p.name)}</div>
-        ${plId ? `<div class="embed-wrap"><iframe src="https://open.spotify.com/embed/playlist/${plId}?utm_source=generator" width="100%" height="232" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>` : ''}`;
+        <div class="embed-wrap"><iframe src="https://open.spotify.com/embed/playlist/${plId}?utm_source=generator" width="100%" height="232" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>`;
+
     } else {
-      // Random track from a random NZ artist
+      // Random track — use search instead of top-tracks (works without elevated scopes)
       const a = allArtists[Math.floor(Math.random() * allArtists.length)];
-      const data = await spotifyFetch(`/artists/${a.spotify_id}/top-tracks?market=NZ`);
-      if (!data || !data.tracks?.length) { rollDice(); return; }
-      const track = data.tracks[Math.floor(Math.random() * Math.min(5, data.tracks.length))];
+      if (!a?.spotify_id) { rollDice(); return; }
+      const data = await spotifyFetch(`/search?q=artist:${encodeURIComponent(a.name)}&type=track&limit=10&market=NZ`);
+      const tracks = data?.tracks?.items?.filter(t => t?.id);
+      if (!tracks?.length) { rollDice(); return; }
+      const track = tracks[Math.floor(Math.random() * tracks.length)];
       result.innerHTML = `
         <div class="spotlight-label">Random NZ Track · ${escHtml(a.name)}</div>
         <div class="spotlight-name">${escHtml(track.name)}</div>
