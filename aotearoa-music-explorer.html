@@ -2,6 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PJNBDDVZ');</script>
+<!-- End Google Tag Manager -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36' fill='none'%3E%3Crect width='36' height='36' rx='8' fill='%230a0a0a'/%3E%3Cpath d='M18 18 C18 18 20 15.5 22 15 C25 14.2 27.5 16.5 27 19.5 C26.3 23.5 22 26 18 25.5 C12.5 24.8 9 20 9.5 14.5 C10.2 7.5 16.5 3.5 23 4.5 C31 5.8 35 13 33.5 21 C31.8 30.5 23 35.5 13.5 33.5 C3 31.2 -1.5 21.5 1 11 C3.8 -1 15 -5 26 -1.5' stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Aotearoa Music Explorer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -642,6 +650,10 @@ footer a { color: var(--ink3); }
 </style>
 </head>
 <body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PJNBDDVZ"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
 
 <!-- ═══════════════ NAV ═══════════════ -->
 <nav id="main-nav">
@@ -1057,50 +1069,32 @@ footer a { color: var(--ink3); }
 
         <!-- Settings -->
         <div class="admin-section" id="asec-settings">
-          <div class="section-header"><h2 class="section-title">Settings</h2></div>
-          <div style="max-width:560px">
-            <div class="form-group">
-              <label class="form-label">Google Sheets Spreadsheet ID</label>
-              <input class="form-input" id="cfg-sheet-id" type="text" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
-              <p class="form-hint">Found in your Google Sheets URL: docs.google.com/spreadsheets/d/<strong>[ID]</strong>/edit</p>
+          <div class="section-header"><h2 class="section-title">Settings & Info</h2></div>
+          <div style="max-width:600px">
+
+            <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:0.75rem">Active Configuration</h3>
+            <p style="font-size:13px;color:var(--ink3);margin-bottom:1rem">These values are hardcoded in the HTML file. To change them, edit the <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">CONFIG</code> block near the top of the <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">&lt;script&gt;</code> section.</p>
+            <div id="config-status" style="background:var(--bg2);border:1px solid var(--border-strong);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1.5rem">
             </div>
-            <div class="form-group">
-              <label class="form-label">Google API Key (public, read-only)</label>
-              <input class="form-input" id="cfg-gapi-key" type="text" placeholder="AIza…">
-              <p class="form-hint">Enable the Google Sheets API in Google Cloud Console. This key is safe to embed (restrict it to your domain).</p>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Spotify Client ID</label>
-              <input class="form-input" id="cfg-spotify-id" type="text" placeholder="Your Spotify app Client ID">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Admin Password</label>
-              <input class="form-input" id="cfg-admin-pw" type="password" placeholder="Set a new password">
-              <p class="form-hint">Stored in localStorage on this device only. Share with team members separately.</p>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Google Sheets Write Webhook URL (optional)</label>
-              <input class="form-input" id="cfg-webhook" type="url" placeholder="https://script.google.com/macros/s/…/exec">
-              <p class="form-hint">A Google Apps Script Web App URL to handle writes (approve submissions, add artists). See setup guide below.</p>
-            </div>
-            <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+
             <hr class="divider">
             <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:0.5rem">Diagnostics</h3>
             <p style="font-size:13px;color:var(--ink2);margin-bottom:1rem">Check what's actually coming back from your Google Sheet.</p>
             <button class="btn btn-outline btn-sm" onclick="runDiagnostics()">Run Sheet Diagnostics</button>
             <div id="diagnostics-output" style="display:none;margin-top:1rem;background:var(--bg2);border:1px solid var(--border-strong);border-radius:var(--radius);padding:1rem;font-size:13px;font-family:monospace;white-space:pre-wrap;max-height:300px;overflow-y:auto"></div>
+
             <hr class="divider">
-            <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:1rem">Google Sheets Setup Guide</h3>
-            <div style="font-size:14px;color:var(--ink2);line-height:1.8">
-              <p><strong>Sheet 1: artists</strong> — columns: name, spotify_id, genres, region, bio, status, match_confidence</p>
-              <p><strong>Sheet 2: playlists</strong> — columns: name, spotify_id, genres, curator, description, status</p>
-              <p><strong>Sheet 3: submissions_artists</strong> — columns: name, spotify_id, spotify_name, note, submitter_name, submitter_email, timestamp, status</p>
-              <p><strong>Sheet 4: submissions_playlists</strong> — columns: spotify_id, description, about, genre, submitter_name, submitter_email, submitter_social, timestamp, status</p>
-              <p class="mt-2">Share your sheet publicly (read-only) for the public facing data. Use a Google Apps Script Web App for authenticated writes.</p>
+            <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:1rem">Sheet Column Reference</h3>
+            <div style="font-size:13px;color:var(--ink2);line-height:1.9">
+              <p><strong>artists</strong> — name, spotify_id, genres, region, bio, status, match_confidence</p>
+              <p><strong>playlists</strong> — name, spotify_id, genres, curator, description, status</p>
+              <p><strong>submissions_artists</strong> — name, spotify_id, spotify_name, note, submitter_name, submitter_email, timestamp, status</p>
+              <p><strong>submissions_playlists</strong> — spotify_id, description, about, genre, submitter_name, submitter_email, submitter_social, timestamp, status</p>
             </div>
+
             <hr class="divider">
             <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:1rem">Google Apps Script (Webhook)</h3>
-            <p style="font-size:14px;color:var(--ink2);margin-bottom:1rem">Create a new Apps Script project bound to your spreadsheet (<strong>Extensions → Apps Script</strong>), paste the code below, then deploy as a Web App (Execute as: Me, Who has access: Anyone).</p>
+            <p style="font-size:14px;color:var(--ink2);margin-bottom:1rem">Deploy as a Web App from <strong>Extensions → Apps Script</strong> in your Google Sheet. Execute as: Me · Who has access: Anyone.</p>
             <details>
               <summary style="cursor:pointer;font-size:14px;font-weight:700;color:var(--ink);margin-bottom:8px">Show Apps Script code ▾</summary>
               <pre style="background:var(--bg2);border:1px solid var(--border-strong);border-radius:var(--radius);padding:1rem;font-size:12px;overflow-x:auto;white-space:pre;line-height:1.6;margin-top:8px"><code>const SHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
@@ -2719,13 +2713,25 @@ async function adminAddPlaylist(e) {
 //  SETTINGS
 // ════════════════════════════════════════
 function loadSettingsFields() {
-  document.getElementById('cfg-sheet-id').value = localStorage.getItem('cfg_sheet_id') || '';
-  document.getElementById('cfg-gapi-key').value = localStorage.getItem('cfg_gapi_key') || '';
-  document.getElementById('cfg-spotify-id').value = localStorage.getItem('cfg_spotify_id') || '';
-  document.getElementById('cfg-webhook').value = localStorage.getItem('cfg_webhook') || '';
-}
-
-async function runDiagnostics() {
+  const el = document.getElementById('config-status');
+  if (!el) return;
+  const rows = [
+    { label: 'Spotify Client ID', value: CONFIG.SPOTIFY_CLIENT_ID, secret: false },
+    { label: 'Google Sheet ID',   value: CONFIG.SHEET_ID,           secret: false },
+    { label: 'Google API Key',    value: CONFIG.GAPI_KEY,           secret: true  },
+    { label: 'Webhook URL',       value: CONFIG.WEBHOOK_URL,        secret: true  },
+  ];
+  el.innerHTML = rows.map((r, i) => {
+    const isSet = r.value && !r.value.startsWith('PASTE_');
+    const display = !isSet ? '<span style="color:var(--danger)">⚠ Not set</span>'
+      : r.secret ? '<span style="color:var(--success)">✓ Set</span>'
+      : `<code style="font-size:12px;word-break:break-all">${escHtml(r.value)}</code>`;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:12px 16px;${i > 0 ? 'border-top:1px solid var(--border)' : ''}">
+      <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);flex-shrink:0">${r.label}</span>
+      <span style="font-size:13px;text-align:right">${display}</span>
+    </div>`;
+  }).join('');
+} {
   const out = document.getElementById('diagnostics-output');
   out.style.display = 'block';
   out.textContent = 'Running…\n';
@@ -2772,22 +2778,6 @@ async function runDiagnostics() {
 
   append('');
   append('Done. Check browser console (F12) for full detail logs.');
-}
-
-function saveSettings() {
-  const sheetId = document.getElementById('cfg-sheet-id').value.trim();
-  const gapiKey = document.getElementById('cfg-gapi-key').value.trim();
-  const spotifyId = document.getElementById('cfg-spotify-id').value.trim();
-  const webhook = document.getElementById('cfg-webhook').value.trim();
-  const pw = document.getElementById('cfg-admin-pw').value;
-
-  if (sheetId) { localStorage.setItem('cfg_sheet_id', sheetId); CONFIG.SHEET_ID = sheetId; }
-  if (gapiKey) { localStorage.setItem('cfg_gapi_key', gapiKey); CONFIG.GAPI_KEY = gapiKey; }
-  if (spotifyId) { localStorage.setItem('cfg_spotify_id', spotifyId); CONFIG.SPOTIFY_CLIENT_ID = spotifyId; }
-  if (webhook) { localStorage.setItem('cfg_webhook', webhook); CONFIG.WEBHOOK_URL = webhook; }
-  if (pw) { localStorage.setItem('cfg_admin_pw', pw); CONFIG.ADMIN_PASSWORD = pw; }
-
-  toast('✓ Settings saved');
 }
 
 // ════════════════════════════════════════
