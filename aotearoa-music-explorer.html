@@ -1053,7 +1053,7 @@ footer a { color: var(--ink3); }
           <div id="import-preview" style="display:none">
             <div class="section-header" style="margin-bottom:1rem"><h3 class="section-title" style="font-size:1.5rem">Import Preview</h3><button class="btn btn-primary btn-sm" onclick="confirmImport()">Import All</button></div>
             <table class="admin-table" id="import-table">
-              <thead><tr><th>Name from CSV</th><th>Spotify Match</th><th>Confidence</th><th>Genres</th><th>Include?</th></tr></thead>
+              <thead><tr><th>Name from CSV</th><th>Spotify Match</th><th>Confidence</th><th>Genres</th><th>Duplicate?</th><th>Include?</th></tr></thead>
               <tbody id="import-body"></tbody>
             </table>
           </div>
@@ -2593,8 +2593,19 @@ async function handleImportFile(input) {
 
   document.getElementById('import-preview').style.display = 'block';
   const tbody = document.getElementById('import-body');
-  tbody.innerHTML = '<tr><td colspan="5" class="loading-center"><div class="loading-ring"></div></td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" class="loading-center"><div class="loading-ring"></div><span style="margin-left:8px">Checking for duplicates and matching Spotify…</span></td></tr>';
   importRows = [];
+
+  // Load existing artists from sheet to check for duplicates
+  let existingIds = new Set();
+  let existingNames = new Set();
+  try {
+    const existing = await sheetsRead('artists');
+    existing.forEach(a => {
+      if (a.spotify_id) existingIds.add(a.spotify_id.trim().toLowerCase());
+      if (a.name) existingNames.add(a.name.trim().toLowerCase());
+    });
+  } catch { /* if sheet read fails, skip duplicate check */ }
 
   for (const name of names) {
     try {
@@ -2604,23 +2615,43 @@ async function handleImportFile(input) {
       const confidence = top
         ? (top.name.toLowerCase() === name.toLowerCase() ? 'auto' : 'ambiguous')
         : 'not-found';
-      importRows.push({ csvName: name, match: top || null, confidence, include: confidence === 'auto' });
+
+      // Check for duplicate by Spotify ID or name
+      const isDupe = top && (
+        existingIds.has(top.id.toLowerCase()) ||
+        existingNames.has(top.name.trim().toLowerCase())
+      );
+
+      importRows.push({
+        csvName: name,
+        match: top || null,
+        confidence,
+        duplicate: isDupe,
+        include: confidence === 'auto' && !isDupe, // don't pre-check duplicates
+      });
     } catch {
-      importRows.push({ csvName: name, match: null, confidence: 'error', include: false });
+      importRows.push({ csvName: name, match: null, confidence: 'error', duplicate: false, include: false });
     }
   }
 
+  const dupeCount = importRows.filter(r => r.duplicate).length;
   tbody.innerHTML = '';
   importRows.forEach((row, i) => {
     const tr = document.createElement('tr');
+    if (row.duplicate) tr.style.opacity = '0.5';
     tr.innerHTML = `
       <td>${escHtml(row.csvName)}</td>
       <td>${row.match ? escHtml(row.match.name) : '<em style="color:var(--ink3)">Not found</em>'}</td>
       <td><span class="badge badge-${row.confidence === 'auto' ? 'approved' : row.confidence === 'ambiguous' ? 'ambiguous' : 'rejected'}">${row.confidence}</span></td>
       <td style="font-size:12px;color:var(--ink3)">${row.match ? (row.match.genres||[]).slice(0,2).join(', ') : '—'}</td>
-      <td><input type="checkbox" ${row.include ? 'checked' : ''} onchange="importRows[${i}].include = this.checked" style="width:16px;height:16px;cursor:pointer"></td>`;
+      <td>${row.duplicate ? '<span class="badge badge-pending">Already in sheet</span>' : '<span style="color:var(--ink3);font-size:12px">—</span>'}</td>
+      <td><input type="checkbox" ${row.include ? 'checked' : ''} ${row.duplicate ? 'title="Already in sheet"' : ''} onchange="importRows[${i}].include = this.checked" style="width:16px;height:16px;cursor:pointer"></td>`;
     tbody.appendChild(tr);
   });
+
+  if (dupeCount > 0) {
+    toast(`${dupeCount} duplicate${dupeCount > 1 ? 's' : ''} found and unchecked`);
+  }
 }
 
 async function confirmImport() {
