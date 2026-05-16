@@ -1367,6 +1367,11 @@ let autocompleteTimer = null;
 let selectedSubmitArtist = null;
 let importRows = [];
 
+// Image loading queue — prevents 429 rate limit errors
+const imageQueue = [];
+let imageQueueRunning = false;
+const IMAGE_QUEUE_DELAY = 200; // ms between each image fetch
+
 // ════════════════════════════════════════
 //  THEME
 // ════════════════════════════════════════
@@ -1478,6 +1483,9 @@ async function exchangePKCECode(code) {
   sessionStorage.setItem('sp_token_exp', String(expiry));
   sessionStorage.removeItem('pkce_verifier');
   history.replaceState({}, '', window.location.pathname);
+  // Token acquired — kick off the image queue and hero art
+  scheduleImageQueue();
+  startHeroCycle();
   return data.access_token;
 }
 
@@ -1912,12 +1920,35 @@ function buildArtistCard(a) {
       </a>
     </div>`;
 
-  // Lazy-load Spotify artist image — staggered to avoid rate limits
+  // Lazy-load Spotify artist image — queued to avoid rate limits
   if (a.spotify_id) {
-    const delay = (document.querySelectorAll('.card').length % 12) * 120;
-    setTimeout(() => loadArtistImage(a.spotify_id, `art-${imgId}`, card), delay);
+    imageQueue.push({ spotifyId: a.spotify_id, placeholderId: `art-${imgId}`, card });
+    scheduleImageQueue();
   }
   return card;
+}
+
+function scheduleImageQueue() {
+  if (imageQueueRunning) return;
+  imageQueueRunning = true;
+  processImageQueue();
+}
+
+async function processImageQueue() {
+  while (imageQueue.length > 0) {
+    // Only load images if we have a Spotify token
+    const token = localStorage.getItem('sp_access_token');
+    const expiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
+    if (!token || Date.now() > expiry) {
+      // No token — stop queue, will restart when user connects
+      imageQueueRunning = false;
+      return;
+    }
+    const item = imageQueue.shift();
+    await loadArtistImage(item.spotifyId, item.placeholderId, item.card);
+    await sleep(IMAGE_QUEUE_DELAY);
+  }
+  imageQueueRunning = false;
 }
 
 async function loadArtistImage(spotifyId, placeholderId, card) {
