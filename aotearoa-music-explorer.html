@@ -1939,10 +1939,14 @@ function buildArtistCard(a) {
       </a>
     </div>`;
 
-  // Lazy-load Spotify artist image — queued to avoid rate limits
+  // Lazy-load Spotify artist image — only if token exists
   if (a.spotify_id) {
-    imageQueue.push({ spotifyId: a.spotify_id, placeholderId: `art-${imgId}`, card });
-    scheduleImageQueue();
+    const hasToken = localStorage.getItem('sp_access_token') &&
+      parseInt(localStorage.getItem('sp_token_expiry') || '0') > Date.now();
+    if (hasToken) {
+      imageQueue.push({ spotifyId: a.spotify_id, placeholderId: `art-${imgId}`, card });
+      scheduleImageQueue();
+    }
   }
   return card;
 }
@@ -2143,9 +2147,10 @@ async function generateGenrePlaylistUI() {
 
   for (const a of shuffled) {
     try {
-      const data = await spotifyFetch(`/artists/${a.spotify_id}/top-tracks?market=NZ`);
-      if (data?.tracks?.length) {
-        const track = data.tracks[Math.floor(Math.random() * Math.min(3, data.tracks.length))];
+      const data = await spotifyFetch(`/search?q=artist:${encodeURIComponent(a.name)}&type=track&limit=5&market=NZ`);
+      const tracks = data?.tracks?.items?.filter(t => t?.id);
+      if (tracks?.length) {
+        const track = tracks[Math.floor(Math.random() * tracks.length)];
         trackIds.push(track.id);
         trackData.push({ track, artist: a });
       }
