@@ -1380,22 +1380,19 @@ const imageObserver = new IntersectionObserver((entries) => {
     const spotifyId = placeholder.dataset.spotifyId;
     if (!spotifyId) return;
     imageObserver.unobserve(placeholder);
-    // Only load if token exists
-    const hasToken = localStorage.getItem('sp_access_token') &&
-      parseInt(localStorage.getItem('sp_token_expiry') || '0') > Date.now();
-    if (!hasToken) {
-      console.log('[AME] Image observer skipping - no token for', spotifyId);
-      return;
-    }
-    console.log('[AME] Loading image for', spotifyId);
     loadArtistImage(spotifyId, placeholder);
   });
 }, { rootMargin: '200px' });
 
 async function loadArtistImage(spotifyId, placeholder) {
   try {
-    const data = await spotifyFetch('/artists/' + spotifyId);
-    if (!data) return;
+    const token = await getSpotifyToken();
+    if (!token) return; // No token yet — silently skip, observer already unobserved
+    const resp = await fetch('https://api.spotify.com/v1/artists/' + spotifyId, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
     const imgUrl = data.images?.[1]?.url || data.images?.[0]?.url;
     if (!imgUrl) return;
     if (!placeholder || !placeholder.parentNode) return;
