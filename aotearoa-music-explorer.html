@@ -1522,16 +1522,24 @@ async function spotifyFetch(path, retries = 3) {
       headers: { 'Authorization': 'Bearer ' + token }
     });
     if (resp.status === 429) {
-      const wait = parseInt(resp.headers.get('Retry-After') || '1') * 1000 + Math.pow(2,i)*300;
-      await sleep(wait); continue;
+      // Rate limited — wait then retry, but max 2 retries for image loading
+      const wait = parseInt(resp.headers.get('Retry-After') || '2') * 1000 + (i * 500);
+      await sleep(wait);
+      continue;
     }
     if (resp.status === 204) return null;
-    if (resp.status === 401) { localStorage.removeItem('sp_access_token'); showConnectBanner(); return null; }
-    const json = await resp.json().catch(() => ({}));
-    if (!resp.ok) throw new Error(json.error?.message || 'Spotify error');
-    return json;
+    if (resp.status === 401) {
+      // Token expired — clear it and stop, don't retry
+      localStorage.removeItem('sp_access_token');
+      localStorage.removeItem('sp_token_expiry');
+      spotifyToken = null;
+      showConnectBanner();
+      return null;
+    }
+    if (!resp.ok) return null; // Any other error — fail silently, don't retry
+    return await resp.json().catch(() => null);
   }
-  throw new Error('Rate limited, try again later');
+  return null; // Exhausted retries — fail silently
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -1683,7 +1691,14 @@ async function loadAllData() {
     renderArtistsPage();
     renderPlaylistsPage();
     populateGenreSelects();
-    startHeroCycle();
+
+    // Only kick off Spotify API calls if we have a valid token
+    const hasToken = localStorage.getItem('sp_access_token') &&
+      parseInt(localStorage.getItem('sp_token_expiry') || '0') > Date.now();
+    if (hasToken) {
+      startHeroCycle();
+      scheduleImageQueue();
+    }
   } catch (err) {
     console.error('[AME] loadAllData error:', err);
     toast('⚠ ' + err.message);
@@ -1761,6 +1776,10 @@ document.addEventListener('DOMContentLoaded', function initWave() {
 let heroCycleTimer = null;
 
 async function startHeroCycle() {
+  // Don't attempt without a valid token
+  const token = localStorage.getItem('sp_access_token');
+  const expiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
+  if (!token || Date.now() > expiry) return;
   clearInterval(heroCycleTimer);
   setHeroArt();
   heroCycleTimer = setInterval(setHeroArt, 9000);
@@ -1936,11 +1955,12 @@ function scheduleImageQueue() {
 
 async function processImageQueue() {
   while (imageQueue.length > 0) {
-    // Only load images if we have a Spotify token
+    // Only load images if we have a valid Spotify token
     const token = localStorage.getItem('sp_access_token');
     const expiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
     if (!token || Date.now() > expiry) {
-      // No token — stop queue, will restart when user connects
+      // No valid token — drain the queue and stop
+      imageQueue.length = 0;
       imageQueueRunning = false;
       return;
     }
