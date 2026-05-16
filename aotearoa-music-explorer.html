@@ -1462,6 +1462,7 @@ function showPage(id) {
 // ════════════════════════════════════════
 let proxyToken = null;
 let proxyTokenExpiry = 0;
+let proxyTokenPromise = null; // singleton — prevents race condition
 
 async function getSpotifyToken() {
   // 1. Use in-memory token if still valid
@@ -1483,7 +1484,7 @@ async function getSpotifyToken() {
     spotifyToken = null;
   }
 
-  // 3. Use cached proxy token (memory or sessionStorage)
+  // 3. Use cached proxy token
   const cachedProxy = sessionStorage.getItem('proxy_token');
   const cachedProxyExp = parseInt(sessionStorage.getItem('proxy_token_exp') || '0');
   if (cachedProxy && Date.now() < cachedProxyExp) {
@@ -1492,26 +1493,32 @@ async function getSpotifyToken() {
     return proxyToken;
   }
 
-  // 4. Fetch fresh proxy token from Netlify function
+  // 4. Fetch fresh proxy token — singleton promise prevents race condition
   if (CONFIG.PROXY_TOKEN_URL && !CONFIG.PROXY_TOKEN_URL.includes('YOUR_NETLIFY')) {
-    try {
-      console.log('[AME] Fetching proxy token from Netlify…');
-      const resp = await fetch(CONFIG.PROXY_TOKEN_URL);
-      if (resp.ok) {
-        const data = await resp.json();
-        proxyToken = data.access_token;
-        proxyTokenExpiry = Date.now() + (data.expires_in - 120) * 1000;
-        // Cache in sessionStorage too
-        sessionStorage.setItem('proxy_token', proxyToken);
-        sessionStorage.setItem('proxy_token_exp', String(proxyTokenExpiry));
-        console.log('[AME] Proxy token acquired — images load for everyone');
-        return proxyToken;
-      } else {
-        console.warn('[AME] Proxy returned', resp.status);
-      }
-    } catch (err) {
-      console.warn('[AME] Proxy token fetch failed:', err.message);
+    if (!proxyTokenPromise) {
+      proxyTokenPromise = (async () => {
+        try {
+          console.log('[AME] Fetching proxy token from Netlify…');
+          const resp = await fetch(CONFIG.PROXY_TOKEN_URL);
+          if (resp.ok) {
+            const data = await resp.json();
+            proxyToken = data.access_token;
+            proxyTokenExpiry = Date.now() + (data.expires_in - 120) * 1000;
+            sessionStorage.setItem('proxy_token', proxyToken);
+            sessionStorage.setItem('proxy_token_exp', String(proxyTokenExpiry));
+            console.log('[AME] Proxy token acquired — images load for everyone');
+            return proxyToken;
+          }
+          console.warn('[AME] Proxy returned', resp.status);
+        } catch (err) {
+          console.warn('[AME] Proxy token fetch failed:', err.message);
+        } finally {
+          proxyTokenPromise = null; // reset so it can retry later
+        }
+        return null;
+      })();
     }
+    return await proxyTokenPromise;
   }
 
   // 5. No token available — show connect banner
