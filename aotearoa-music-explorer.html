@@ -1387,10 +1387,20 @@ const imageObserver = new IntersectionObserver((entries) => {
 async function loadArtistImage(spotifyId, placeholder) {
   try {
     const token = await getSpotifyToken();
-    if (!token) return; // No token yet — silently skip, observer already unobserved
+    if (!token) return;
+    // Small random jitter to avoid simultaneous requests
+    await sleep(Math.random() * 300);
     const resp = await fetch('https://api.spotify.com/v1/artists/' + spotifyId, {
       headers: { 'Authorization': 'Bearer ' + token }
     });
+    if (resp.status === 429) {
+      // Rate limited — re-observe so it retries when user scrolls again
+      const wait = parseInt(resp.headers.get('Retry-After') || '5') * 1000;
+      setTimeout(() => {
+        if (placeholder && placeholder.parentNode) imageObserver.observe(placeholder);
+      }, wait);
+      return;
+    }
     if (!resp.ok) return;
     const data = await resp.json();
     const imgUrl = data.images?.[1]?.url || data.images?.[0]?.url;
@@ -1473,8 +1483,14 @@ async function getSpotifyToken() {
     spotifyToken = null;
   }
 
-  // 3. Use cached proxy token
-  if (proxyToken && Date.now() < proxyTokenExpiry) return proxyToken;
+  // 3. Use cached proxy token (memory or sessionStorage)
+  const cachedProxy = sessionStorage.getItem('proxy_token');
+  const cachedProxyExp = parseInt(sessionStorage.getItem('proxy_token_exp') || '0');
+  if (cachedProxy && Date.now() < cachedProxyExp) {
+    proxyToken = cachedProxy;
+    proxyTokenExpiry = cachedProxyExp;
+    return proxyToken;
+  }
 
   // 4. Fetch fresh proxy token from Netlify function
   if (CONFIG.PROXY_TOKEN_URL && !CONFIG.PROXY_TOKEN_URL.includes('YOUR_NETLIFY')) {
@@ -1485,6 +1501,9 @@ async function getSpotifyToken() {
         const data = await resp.json();
         proxyToken = data.access_token;
         proxyTokenExpiry = Date.now() + (data.expires_in - 120) * 1000;
+        // Cache in sessionStorage too
+        sessionStorage.setItem('proxy_token', proxyToken);
+        sessionStorage.setItem('proxy_token_exp', String(proxyTokenExpiry));
         console.log('[AME] Proxy token acquired — images load for everyone');
         return proxyToken;
       } else {
