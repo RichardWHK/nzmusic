@@ -1367,10 +1367,37 @@ let autocompleteTimer = null;
 let selectedSubmitArtist = null;
 let importRows = [];
 
-// Image loading queue — prevents 429 rate limit errors
-const imageQueue = [];
-let imageQueueRunning = false;
-const IMAGE_QUEUE_DELAY = 200; // ms between each image fetch
+// ════════════════════════════════════════
+//  LAZY IMAGE LOADING — IntersectionObserver
+//  Only fetches artist images when card is visible on screen
+//  No queue, no rate limit storms, scales to any library size
+// ════════════════════════════════════════
+const imageObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    const placeholder = entry.target;
+    const spotifyId = placeholder.dataset.spotifyId;
+    if (!spotifyId) return;
+    imageObserver.unobserve(placeholder); // only try once
+    loadArtistImage(spotifyId, placeholder);
+  });
+}, { rootMargin: '200px' }); // start loading 200px before card enters view
+
+async function loadArtistImage(spotifyId, placeholder) {
+  try {
+    const data = await spotifyFetch('/artists/' + spotifyId);
+    if (!data) return;
+    const imgUrl = data.images?.[1]?.url || data.images?.[0]?.url;
+    if (!imgUrl) return;
+    if (!placeholder || !placeholder.parentNode) return;
+    const img = document.createElement('img');
+    img.className = 'card-img';
+    img.src = imgUrl;
+    img.alt = data.name;
+    img.loading = 'lazy';
+    placeholder.replaceWith(img);
+  } catch {}
+}
 
 // ════════════════════════════════════════
 //  THEME
@@ -1483,8 +1510,7 @@ async function exchangePKCECode(code) {
   sessionStorage.setItem('sp_token_exp', String(expiry));
   sessionStorage.removeItem('pkce_verifier');
   history.replaceState({}, '', window.location.pathname);
-  // Token acquired — kick off the image queue and hero art
-  scheduleImageQueue();
+  // Token acquired — kick off hero art
   startHeroCycle();
   return data.access_token;
 }
@@ -1697,7 +1723,6 @@ async function loadAllData() {
       parseInt(localStorage.getItem('sp_token_expiry') || '0') > Date.now();
     if (hasToken) {
       startHeroCycle();
-      scheduleImageQueue();
     }
   } catch (err) {
     console.error('[AME] loadAllData error:', err);
@@ -1923,7 +1948,7 @@ function buildArtistCard(a) {
   const imgId = a.spotify_id;
 
   card.innerHTML = `
-    <div class="card-img-placeholder" id="art-${imgId}">
+    <div class="card-img-placeholder" id="art-${imgId}" data-spotify-id="${escHtml(a.spotify_id)}">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
     </div>
     <div class="card-body">
@@ -1939,54 +1964,12 @@ function buildArtistCard(a) {
       </a>
     </div>`;
 
-  // Lazy-load Spotify artist image — only if token exists
+  // Observe placeholder — image loads when card scrolls into view
   if (a.spotify_id) {
-    const hasToken = localStorage.getItem('sp_access_token') &&
-      parseInt(localStorage.getItem('sp_token_expiry') || '0') > Date.now();
-    if (hasToken) {
-      imageQueue.push({ spotifyId: a.spotify_id, placeholderId: `art-${imgId}`, card });
-      scheduleImageQueue();
-    }
+    const placeholder = card.querySelector('.card-img-placeholder');
+    if (placeholder) imageObserver.observe(placeholder);
   }
   return card;
-}
-
-function scheduleImageQueue() {
-  if (imageQueueRunning) return;
-  imageQueueRunning = true;
-  processImageQueue();
-}
-
-async function processImageQueue() {
-  while (imageQueue.length > 0) {
-    // Only load images if we have a valid Spotify token
-    const token = localStorage.getItem('sp_access_token');
-    const expiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
-    if (!token || Date.now() > expiry) {
-      // No valid token — drain the queue and stop
-      imageQueue.length = 0;
-      imageQueueRunning = false;
-      return;
-    }
-    const item = imageQueue.shift();
-    await loadArtistImage(item.spotifyId, item.placeholderId, item.card);
-    await sleep(IMAGE_QUEUE_DELAY);
-  }
-  imageQueueRunning = false;
-}
-
-async function loadArtistImage(spotifyId, placeholderId, card) {
-  try {
-    const data = await spotifyFetch('/artists/' + spotifyId);
-    if (!data) return;
-    const imgUrl = data.images?.[1]?.url || data.images?.[0]?.url;
-    if (!imgUrl) return;
-    const placeholder = document.getElementById(placeholderId);
-    if (!placeholder) return;
-    const img = document.createElement('img');
-    img.className = 'card-img'; img.src = imgUrl; img.alt = data.name; img.loading = 'lazy';
-    placeholder.replaceWith(img);
-  } catch {}
 }
 
 function renderFeaturedPlaylists() {
