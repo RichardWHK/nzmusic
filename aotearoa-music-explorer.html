@@ -1457,21 +1457,32 @@ let proxyToken = null;
 let proxyTokenExpiry = 0;
 
 async function getSpotifyToken() {
-  // 1. Use PKCE user token if available (has more permissions)
+  // 1. Use in-memory token if still valid
+  if (spotifyToken && Date.now() < spotifyTokenExpiry) return spotifyToken;
+
+  // 2. Use PKCE user token from localStorage if genuinely still valid
   const userToken = localStorage.getItem('sp_access_token');
   const userExpiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
-  if (userToken && Date.now() < userExpiry) {
+  if (userToken && userExpiry && Date.now() < userExpiry) {
     spotifyToken = userToken;
     spotifyTokenExpiry = userExpiry;
+    console.log('[AME] Using stored user token, expires in', Math.round((userExpiry - Date.now())/60000), 'mins');
     return userToken;
+  } else if (userToken) {
+    // Token exists but is expired — clear it
+    console.log('[AME] Stored user token expired, clearing');
+    localStorage.removeItem('sp_access_token');
+    localStorage.removeItem('sp_token_expiry');
+    spotifyToken = null;
   }
 
-  // 2. Use cached proxy token
+  // 3. Use cached proxy token
   if (proxyToken && Date.now() < proxyTokenExpiry) return proxyToken;
 
-  // 3. Fetch fresh proxy token from Netlify function
+  // 4. Fetch fresh proxy token from Netlify function
   if (CONFIG.PROXY_TOKEN_URL && !CONFIG.PROXY_TOKEN_URL.includes('YOUR_NETLIFY')) {
     try {
+      console.log('[AME] Fetching proxy token from Netlify…');
       const resp = await fetch(CONFIG.PROXY_TOKEN_URL);
       if (resp.ok) {
         const data = await resp.json();
@@ -1479,13 +1490,16 @@ async function getSpotifyToken() {
         proxyTokenExpiry = Date.now() + (data.expires_in - 120) * 1000;
         console.log('[AME] Proxy token acquired — images load for everyone');
         return proxyToken;
+      } else {
+        console.warn('[AME] Proxy returned', resp.status);
       }
     } catch (err) {
       console.warn('[AME] Proxy token fetch failed:', err.message);
     }
   }
 
-  // 4. No token available — show connect banner
+  // 5. No token available — show connect banner
+  console.log('[AME] No token available — showing connect banner');
   return null;
 }
 
