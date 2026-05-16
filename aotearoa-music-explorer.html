@@ -1341,6 +1341,7 @@ const CONFIG = {
   GAPI_KEY:           localStorage.getItem('cfg_gapi_key')    || 'AIzaSyDu7i6pNR-y8vegjo8ZX-TIzbVCaHp_Zi0',
   WEBHOOK_URL:        localStorage.getItem('cfg_webhook')     || 'https://script.google.com/macros/s/AKfycbwaZQSdxyr3uSiZKJmlULUSB41tw_78BR15m0QOExYx7bwg8QzJ2r2c59SyOivl9qCUrQ/exec',
   ADMIN_PASSWORD:     localStorage.getItem('cfg_admin_pw')    || 'aotearoa2025',
+  PROXY_TOKEN_URL:    'https://nzmusic.netlify.app/.netlify/functions/spotify-token',
 };
 
 // ════════════════════════════════════════
@@ -1378,10 +1379,18 @@ const imageObserver = new IntersectionObserver((entries) => {
     const placeholder = entry.target;
     const spotifyId = placeholder.dataset.spotifyId;
     if (!spotifyId) return;
-    imageObserver.unobserve(placeholder); // only try once
+    imageObserver.unobserve(placeholder);
+    // Only load if token exists
+    const hasToken = localStorage.getItem('sp_access_token') &&
+      parseInt(localStorage.getItem('sp_token_expiry') || '0') > Date.now();
+    if (!hasToken) {
+      console.log('[AME] Image observer skipping - no token for', spotifyId);
+      return;
+    }
+    console.log('[AME] Loading image for', spotifyId);
     loadArtistImage(spotifyId, placeholder);
   });
-}, { rootMargin: '200px' }); // start loading 200px before card enters view
+}, { rootMargin: '200px' });
 
 async function loadArtistImage(spotifyId, placeholder) {
   try {
@@ -1442,26 +1451,42 @@ function showPage(id) {
 }
 
 // ════════════════════════════════════════
-//  SPOTIFY — Client Credentials (public)
+//  SPOTIFY TOKEN — proxy first, PKCE fallback
 // ════════════════════════════════════════
+let proxyToken = null;
+let proxyTokenExpiry = 0;
+
 async function getSpotifyToken() {
-  if (spotifyToken && Date.now() < spotifyTokenExpiry) return spotifyToken;
-  // Client credentials — safe for public catalog reads; no secret exposed
-  // We use the implicit approach: PKCE token fetch with no user scope
-  // For true client-creds you need a backend. We use a PKCE-less public token approach:
-  // The app uses Authorization Code with PKCE scoped to no user data for catalog search.
-  // On first load we do a silent token fetch. If it fails we prompt.
-  const cached = sessionStorage.getItem('sp_token');
-  const cachedExp = parseInt(sessionStorage.getItem('sp_token_exp') || '0');
-  if (cached && Date.now() < cachedExp) {
-    spotifyToken = cached;
-    spotifyTokenExpiry = cachedExp;
-    return cached;
+  // 1. Use PKCE user token if available (has more permissions)
+  const userToken = localStorage.getItem('sp_access_token');
+  const userExpiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
+  if (userToken && Date.now() < userExpiry) {
+    spotifyToken = userToken;
+    spotifyTokenExpiry = userExpiry;
+    return userToken;
   }
 
-  // For a no-backend single-file app, we use PKCE with no scopes (catalog-only)
-  // Prompt user to authenticate once to get catalog access
-  return await startPKCEFlow();
+  // 2. Use cached proxy token
+  if (proxyToken && Date.now() < proxyTokenExpiry) return proxyToken;
+
+  // 3. Fetch fresh proxy token from Netlify function
+  if (CONFIG.PROXY_TOKEN_URL && !CONFIG.PROXY_TOKEN_URL.includes('YOUR_NETLIFY')) {
+    try {
+      const resp = await fetch(CONFIG.PROXY_TOKEN_URL);
+      if (resp.ok) {
+        const data = await resp.json();
+        proxyToken = data.access_token;
+        proxyTokenExpiry = Date.now() + (data.expires_in - 120) * 1000;
+        console.log('[AME] Proxy token acquired — images load for everyone');
+        return proxyToken;
+      }
+    } catch (err) {
+      console.warn('[AME] Proxy token fetch failed:', err.message);
+    }
+  }
+
+  // 4. No token available — show connect banner
+  return null;
 }
 
 async function startPKCEFlow() {
@@ -1543,6 +1568,7 @@ async function spotifyFetch(path, retries = 3) {
     showConnectBanner();
     return null;
   }
+  console.log('[AME] spotifyFetch:', path.substring(0, 60));
   for (let i = 0; i <= retries; i++) {
     const resp = await fetch('https://api.spotify.com/v1' + path, {
       headers: { 'Authorization': 'Bearer ' + token }
@@ -1596,7 +1622,7 @@ function showConnectBanner() {
   banner.innerHTML = `
     <div>
       <strong style="font-family:var(--font-display);letter-spacing:1px;font-size:1.1rem;display:block">Connect Spotify</strong>
-      <span style="font-size:12px;opacity:0.6">Required to load NZ artist data</span>
+      <span style="font-size:12px;opacity:0.6">Enable personal features like saving & following artists</span>
     </div>
     <div style="display:flex;gap:8px;flex-shrink:0">
       <button class="btn btn-outline btn-sm" style="color:var(--accent-inv);border-color:rgba(255,255,255,0.25)" onclick="document.getElementById('connect-banner').remove()">Later</button>
