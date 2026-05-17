@@ -2158,21 +2158,29 @@ async function loadKaupapa() {
   content.style.display = 'none';
   try {
     const rows = await sheetsRead('kaupapa');
-    const text = rows.map(r => r.content || r.text || Object.values(r)[0] || '').join('\n');
-    // Render line breaks as paragraphs
-    content.innerHTML = text
-      .split(/\n\n+/)
-      .filter(Boolean)
-      .map(para => `<p style="margin-bottom:1.2rem">${escHtml(para).replace(/\n/g, '<br>')}</p>`)
-      .join('');
+    // Each row should have a 'content' column
+    const text = rows
+      .map(r => r.content || '')
+      .join('\n')
+      .trim();
+
+    if (!text) {
+      content.innerHTML = '<p style="color:var(--ink3)">Kaupapa content coming soon.</p>';
+    } else {
+      content.innerHTML = text
+        .split(/\n\n+/)
+        .filter(Boolean)
+        .map(para => `<p style="margin-bottom:1.2rem">${escHtml(para).replace(/\n/g, '<br>')}</p>`)
+        .join('');
+    }
     loading.style.display = 'none';
     content.style.display = 'block';
-    // Also populate admin editor if open
+    // Populate admin editor
     const editor = document.getElementById('kaupapa-editor');
     if (editor && !editor.value) editor.value = text;
   } catch {
     loading.style.display = 'none';
-    content.innerHTML = '<p style="color:var(--ink3)">Kaupapa content not yet added.</p>';
+    content.innerHTML = '<p style="color:var(--ink3)">Kaupapa content coming soon.</p>';
     content.style.display = 'block';
   }
 }
