@@ -889,7 +889,7 @@ footer a { color: var(--ink3); }
             </div>
             <div class="form-group">
               <label class="form-label">Genre(s) — select all that apply</label>
-              <div id="submit-pl-genre-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+              <div id="submit-pl-genre-pills"></div>
               <input type="hidden" id="submit-pl-genre">
             </div>
           </div>
@@ -1078,12 +1078,28 @@ footer a { color: var(--ink3); }
             <h2 class="section-title">Kaupapa Page</h2>
             <button class="btn btn-primary btn-sm" onclick="saveKaupapa()">Save</button>
           </div>
-          <p style="color:var(--ink2);margin-bottom:1.5rem;font-size:14px">Write your Kaupapa content below. Plain text and line breaks are supported. This appears on the public Kaupapa page.</p>
-          <div class="form-group">
-            <label class="form-label">Page content</label>
-            <textarea class="form-textarea" id="kaupapa-editor" style="min-height:400px;font-size:15px;line-height:1.8" placeholder="Write your Kaupapa here…"></textarea>
+          <p style="color:var(--ink2);margin-bottom:1.5rem;font-size:14px">Write your Kaupapa content below. Use the toolbar for headings, bold, links etc. This appears on the public Kaupapa page.</p>
+
+          <!-- Rich text toolbar -->
+          <div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:var(--bg2);border:1.5px solid var(--ink);border-bottom:none;border-radius:var(--radius) var(--radius) 0 0">
+            <button type="button" onclick="rte('formatBlock','h2')" class="btn btn-outline btn-sm" style="font-size:13px;padding:4px 10px" title="Heading">H2</button>
+            <button type="button" onclick="rte('formatBlock','h3')" class="btn btn-outline btn-sm" style="font-size:13px;padding:4px 10px" title="Subheading">H3</button>
+            <button type="button" onclick="rte('formatBlock','p')" class="btn btn-outline btn-sm" style="font-size:13px;padding:4px 10px" title="Paragraph">¶</button>
+            <div style="width:1px;background:var(--border-strong);margin:0 4px"></div>
+            <button type="button" onclick="rte('bold')" class="btn btn-outline btn-sm" style="font-weight:700;padding:4px 10px" title="Bold"><b>B</b></button>
+            <button type="button" onclick="rte('italic')" class="btn btn-outline btn-sm" style="font-style:italic;padding:4px 10px" title="Italic"><i>I</i></button>
+            <div style="width:1px;background:var(--border-strong);margin:0 4px"></div>
+            <button type="button" onclick="rteLink()" class="btn btn-outline btn-sm" style="padding:4px 10px" title="Insert link">🔗 Link</button>
+            <button type="button" onclick="rte('insertUnorderedList')" class="btn btn-outline btn-sm" style="padding:4px 10px" title="Bullet list">• List</button>
+            <div style="width:1px;background:var(--border-strong);margin:0 4px"></div>
+            <button type="button" onclick="rteClear()" class="btn btn-outline btn-sm" style="padding:4px 10px;color:var(--danger)" title="Clear all">Clear</button>
           </div>
-          <div id="kaupapa-save-status" style="font-size:13px;color:var(--success);display:none">✓ Saved</div>
+          <div id="kaupapa-editor"
+            contenteditable="true"
+            style="min-height:380px;padding:1.25rem;border:1.5px solid var(--ink);border-radius:0 0 var(--radius) var(--radius);background:var(--bg);font-family:var(--font-body);font-size:15px;line-height:1.8;outline:none;color:var(--ink)"
+            oninput="this.dataset.dirty='1'"
+            placeholder="Write your Kaupapa here…"></div>
+          <div id="kaupapa-save-status" style="font-size:13px;color:var(--success);margin-top:8px;display:none">✓ Saved</div>
         </div>
 
         <!-- Settings -->
@@ -1218,9 +1234,8 @@ function doPost(e) {
       const sheet = ss.getSheetByName('kaupapa') || ss.insertSheet('kaupapa');
       sheet.clearContents();
       sheet.getRange(1,1).setValue('content');
-      // Split by double newline into paragraphs, each in its own row
-      const paras = (data.content || '').split('\n');
-      paras.forEach((line, i) => sheet.getRange(i+2, 1).setValue(line));
+      // Store entire content as a single cell in row 2
+      sheet.getRange(2,1).setValue(data.content || '');
 
     } else if (data.action === 'remove_artist') {
       const sheet = ss.getSheetByName('artists');
@@ -2017,13 +2032,13 @@ function buildGenrePicker(containerId, hiddenInputId, genres) {
   const hidden = document.getElementById(hiddenInputId);
   if (!container || !hidden) return;
   container.innerHTML = '';
+  container.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;max-height:200px;overflow-y:auto;padding:8px;border:1.5px solid var(--border-strong);border-radius:var(--radius);background:var(--bg)';
   const selected = new Set();
   genres.forEach(g => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'genre-pill';
-    btn.style.fontSize = '12px';
-    btn.style.padding = '5px 12px';
+    btn.style.cssText = 'font-size:12px;padding:4px 12px;flex-shrink:0';
     btn.textContent = g;
     btn.onclick = () => {
       if (selected.has(g)) {
@@ -2197,26 +2212,27 @@ async function loadKaupapa() {
   content.style.display = 'none';
   try {
     const rows = await sheetsRead('kaupapa');
-    // Each row should have a 'content' column
-    const text = rows
-      .map(r => r.content || '')
-      .join('\n')
-      .trim();
-
+    // Content is stored as a single value in the first data row
+    const text = (rows[0]?.content || '').trim();
     if (!text) {
       content.innerHTML = '<p style="color:var(--ink3)">Kaupapa content coming soon.</p>';
     } else {
-      content.innerHTML = text
-        .split(/\n\n+/)
-        .filter(Boolean)
-        .map(para => `<p style="margin-bottom:1.2rem">${escHtml(para).replace(/\n/g, '<br>')}</p>`)
-        .join('');
+      // Render as HTML if it contains tags, otherwise render as paragraphs
+      if (text.includes('<') && text.includes('>')) {
+        content.innerHTML = text;
+      } else {
+        content.innerHTML = text
+          .split(/\n\n+/)
+          .filter(Boolean)
+          .map(para => `<p style="margin-bottom:1.2rem">${escHtml(para).replace(/\n/g, '<br>')}</p>`)
+          .join('');
+      }
     }
     loading.style.display = 'none';
     content.style.display = 'block';
     // Populate admin editor
     const editor = document.getElementById('kaupapa-editor');
-    if (editor && !editor.value) editor.value = text;
+    if (editor && !editor.dataset.dirty) editor.innerHTML = text;
   } catch {
     loading.style.display = 'none';
     content.innerHTML = '<p style="color:var(--ink3)">Kaupapa content coming soon.</p>';
@@ -2224,10 +2240,28 @@ async function loadKaupapa() {
   }
 }
 
+// ════════════════════════════════════════
+//  RICH TEXT EDITOR HELPERS
+// ════════════════════════════════════════
+function rte(cmd, val) {
+  document.getElementById('kaupapa-editor').focus();
+  document.execCommand(cmd, false, val || null);
+}
+function rteLink() {
+  const url = prompt('Enter URL:');
+  if (url) rte('createLink', url);
+}
+function rteClear() {
+  if (confirm('Clear all content?')) {
+    document.getElementById('kaupapa-editor').innerHTML = '';
+  }
+}
+
 async function saveKaupapa() {
   const editor = document.getElementById('kaupapa-editor');
   if (!editor) return;
-  const ok = await sheetsWrite('save_kaupapa', { content: editor.value });
+  const html = editor.innerHTML.trim();
+  const ok = await sheetsWrite('save_kaupapa', { content: html });
   const status = document.getElementById('kaupapa-save-status');
   if (!CONFIG.WEBHOOK_URL) {
     toast('Demo mode: configure webhook to persist Kaupapa content');
@@ -2235,6 +2269,7 @@ async function saveKaupapa() {
   }
   if (ok !== false) {
     if (status) { status.style.display = 'block'; setTimeout(() => status.style.display = 'none', 3000); }
+    editor.dataset.dirty = '';
     toast('✓ Kaupapa saved');
   } else {
     toast('⚠ Save failed');
@@ -3060,11 +3095,10 @@ function adminSection(id) {
   document.getElementById('asec-' + id).classList.add('active');
   document.querySelector(`[data-asec="${id}"]`).classList.add('active');
   if (id === 'kaupapa') {
-    // Pre-populate editor with current content
     sheetsRead('kaupapa').then(rows => {
       const editor = document.getElementById('kaupapa-editor');
-      if (editor && rows.length) {
-        editor.value = rows.map(r => r.content || Object.values(r)[0] || '').join('\n');
+      if (editor && !editor.dataset.dirty && rows.length) {
+        editor.innerHTML = rows[0]?.content || '';
       }
     }).catch(() => {});
   }
