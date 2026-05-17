@@ -1193,11 +1193,21 @@ function doPost(e) {
 
     } else if (data.action === 'approve_playlist_submission') {
       const subSheet = ss.getSheetByName('submissions_playlists');
+      // submissions_playlists columns (0-indexed):
+      // 0=spotify_id, 1=description, 2=about, 3=genre, 4=submitter_name,
+      // 5=submitter_email, 6=submitter_social, 7=timestamp, 8=status
       const row = subSheet.getRange(data.row + 2, 1, 1, 9).getValues()[0];
       subSheet.getRange(data.row + 2, 9).setValue('approved');
       const plSheet = ss.getSheetByName('playlists');
-      // name=description, spotify_id, genres=genre, curator=submitter_name, description=about
-      plSheet.appendRow([row[1], row[0], row[3], row[4], row[2], 'approved']);
+      // playlists columns: name, spotify_id, genres, curator, description, status
+      plSheet.appendRow([
+        row[1],  // name = description field
+        row[0],  // spotify_id
+        row[3],  // genres = genre field
+        row[4],  // curator = submitter_name
+        row[2],  // description = about field
+        'approved'
+      ]);
 
     } else if (data.action === 'reject_submission') {
       const sheet = ss.getSheetByName(data.sheet);
