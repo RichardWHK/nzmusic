@@ -440,9 +440,9 @@ nav {
 .modal-overlay.open { opacity: 1; pointer-events: auto; }
 .modal {
   background: var(--bg); border: 1.5px solid var(--ink);
-  border-radius: var(--radius-lg); width: 100%; max-width: 540px;
+  border-radius: var(--radius-lg); width: 100%; max-width: 600px;
   max-height: 90vh; overflow-y: auto;
-  padding: 2rem; transform: translateY(12px);
+  padding: 1.25rem; transform: translateY(12px);
   transition: transform 0.2s;
 }
 .modal-overlay.open .modal { transform: translateY(0); }
@@ -933,6 +933,19 @@ footer a { color: var(--ink3); }
   </div>
 </div>
 
+<!-- ═══════════════ PAGE: KAUPAPA ═══════════════ -->
+<div id="page-kaupapa" class="page">
+  <div class="section">
+    <div class="container" style="max-width:760px">
+      <div class="section-header">
+        <h2 class="section-title">Kaupapa</h2>
+      </div>
+      <div id="kaupapa-loading" class="loading-center"><div class="loading-ring"></div></div>
+      <div id="kaupapa-content" style="display:none;font-size:16px;line-height:1.9;color:var(--ink2)"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════ PAGE: ADMIN ═══════════════ -->
 <div id="page-admin" class="page">
 
@@ -974,6 +987,7 @@ footer a { color: var(--ink3); }
         <button class="admin-nav-item" onclick="adminSection('artists')" data-asec="artists">Artists</button>
         <button class="admin-nav-item" onclick="adminSection('playlists')" data-asec="playlists">Playlists</button>
         <button class="admin-nav-item" onclick="adminSection('import')" data-asec="import">Import Spreadsheet</button>
+        <button class="admin-nav-item" onclick="adminSection('kaupapa')" data-asec="kaupapa">Kaupapa Page</button>
         <button class="admin-nav-item" onclick="adminSection('settings')" data-asec="settings">Settings</button>
         <hr style="border-color:rgba(255,255,255,0.1);margin:1.5rem 0">
         <button class="admin-nav-item" onclick="adminLogout()">Log out</button>
@@ -1057,6 +1071,20 @@ footer a { color: var(--ink3); }
               <tbody id="import-body"></tbody>
             </table>
           </div>
+        </div>
+
+        <!-- Kaupapa -->
+        <div class="admin-section" id="asec-kaupapa">
+          <div class="section-header">
+            <h2 class="section-title">Kaupapa Page</h2>
+            <button class="btn btn-primary btn-sm" onclick="saveKaupapa()">Save</button>
+          </div>
+          <p style="color:var(--ink2);margin-bottom:1.5rem;font-size:14px">Write your Kaupapa content below. Plain text and line breaks are supported. This appears on the public Kaupapa page.</p>
+          <div class="form-group">
+            <label class="form-label">Page content</label>
+            <textarea class="form-textarea" id="kaupapa-editor" style="min-height:400px;font-size:15px;line-height:1.8" placeholder="Write your Kaupapa here…"></textarea>
+          </div>
+          <div id="kaupapa-save-status" style="font-size:13px;color:var(--success);display:none">✓ Saved</div>
         </div>
 
         <!-- Settings -->
@@ -1187,6 +1215,14 @@ function doPost(e) {
       // genres is column C (index 3), row is 0-indexed data row so +2 for header
       sheet.getRange(data.row + 2, 3).setValue(data.genres);
 
+    } else if (data.action === 'save_kaupapa') {
+      const sheet = ss.getSheetByName('kaupapa') || ss.insertSheet('kaupapa');
+      sheet.clearContents();
+      sheet.getRange(1,1).setValue('content');
+      // Split by double newline into paragraphs, each in its own row
+      const paras = (data.content || '').split('\n');
+      paras.forEach((line, i) => sheet.getRange(i+2, 1).setValue(line));
+
     } else if (data.action === 'remove_artist') {
       const sheet = ss.getSheetByName('artists');
       sheet.deleteRow(data.row + 2);
@@ -1298,6 +1334,7 @@ function doPost(e) {
   <div>Music data by <a href="https://spotify.com" target="_blank">Spotify</a> · Not affiliated with Spotify AB</div>
   <div style="display:flex;align-items:center;gap:1rem">
     <button class="btn btn-outline btn-sm" onclick="showPage('submit')">Submit an Artist</button>
+    <button onclick="showPage('kaupapa')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--ink3);font-family:var(--font-body);letter-spacing:1px;opacity:0.6;transition:opacity 0.2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">Kaupapa</button>
     <button onclick="showPage('admin')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--ink3);font-family:var(--font-body);letter-spacing:1px;opacity:0.5;transition:opacity 0.2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'" title="Admin area">admin</button>
   </div>
 </footer>
@@ -1311,7 +1348,7 @@ function doPost(e) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4"/><circle cx="17" cy="17" r="4"/></svg>
     Artists
   </button>
-  <button class="mobile-nav-item" data-page="explorer" onclick="rollDice(); showPage('explorer');">
+  <button class="mobile-nav-item" data-page="explorer" onclick="showPage('explorer'); setTimeout(()=>{ rollDice(); }, 100);">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
     Dice
   </button>
@@ -1455,6 +1492,7 @@ function showPage(id) {
     if (allArtists.length === 0) loadAllData();
   }
   if (id === 'admin') initAdmin();
+  if (id === 'kaupapa') loadKaupapa();
 }
 
 // ════════════════════════════════════════
@@ -2092,26 +2130,69 @@ async function openArtistModal(a) {
   const body = document.getElementById('artist-modal-body');
   const genreTags = parseGenres(a.genres).map(g => `<span class="card-genre-tag">${escHtml(g)}</span>`).join('');
   body.innerHTML = `
-    ${genreTags ? `<div class="card-genres" style="margin-bottom:1rem">${genreTags}</div>` : ''}
-    <div id="modal-artist-tracks" class="loading-center"><div class="loading-ring"></div><span>Loading top tracks…</span></div>`;
-
+    ${genreTags ? `<div class="card-genres" style="margin-bottom:0.75rem">${genreTags}</div>` : ''}
+    <div id="modal-artist-tracks"><div class="loading-ring" style="margin:1rem auto;display:block"></div></div>`;
   openModal('artist-modal');
-
   if (a.spotify_id) {
-    const tracksDiv = document.getElementById('modal-artist-tracks');
-    tracksDiv.innerHTML = `
-      <div class="embed-wrap">
-        <iframe src="https://open.spotify.com/embed/artist/${a.spotify_id}?utm_source=generator" width="100%" height="352" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-      </div>
-      <a class="card-spotify-link mt-2" href="https://open.spotify.com/artist/${a.spotify_id}" target="_blank" rel="noopener" style="margin-top:12px;display:inline-flex">
+    document.getElementById('modal-artist-tracks').innerHTML = `
+      <iframe src="https://open.spotify.com/embed/artist/${a.spotify_id}?utm_source=generator"
+        width="100%" height="380"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy" style="border:none;border-radius:var(--radius);display:block"></iframe>
+      <a class="card-spotify-link" href="https://open.spotify.com/artist/${a.spotify_id}"
+        target="_blank" rel="noopener"
+        style="margin-top:10px;display:inline-flex;font-size:12px">
         View full profile on Spotify →
       </a>`;
   }
 }
 
 // ════════════════════════════════════════
-//  ROLL THE DICE
+//  KAUPAPA PAGE
 // ════════════════════════════════════════
+async function loadKaupapa() {
+  const loading = document.getElementById('kaupapa-loading');
+  const content = document.getElementById('kaupapa-content');
+  if (!loading || !content) return;
+  loading.style.display = 'flex';
+  content.style.display = 'none';
+  try {
+    const rows = await sheetsRead('kaupapa');
+    const text = rows.map(r => r.content || r.text || Object.values(r)[0] || '').join('\n');
+    // Render line breaks as paragraphs
+    content.innerHTML = text
+      .split(/\n\n+/)
+      .filter(Boolean)
+      .map(para => `<p style="margin-bottom:1.2rem">${escHtml(para).replace(/\n/g, '<br>')}</p>`)
+      .join('');
+    loading.style.display = 'none';
+    content.style.display = 'block';
+    // Also populate admin editor if open
+    const editor = document.getElementById('kaupapa-editor');
+    if (editor && !editor.value) editor.value = text;
+  } catch {
+    loading.style.display = 'none';
+    content.innerHTML = '<p style="color:var(--ink3)">Kaupapa content not yet added.</p>';
+    content.style.display = 'block';
+  }
+}
+
+async function saveKaupapa() {
+  const editor = document.getElementById('kaupapa-editor');
+  if (!editor) return;
+  const ok = await sheetsWrite('save_kaupapa', { content: editor.value });
+  const status = document.getElementById('kaupapa-save-status');
+  if (!CONFIG.WEBHOOK_URL) {
+    toast('Demo mode: configure webhook to persist Kaupapa content');
+    return;
+  }
+  if (ok !== false) {
+    if (status) { status.style.display = 'block'; setTimeout(() => status.style.display = 'none', 3000); }
+    toast('✓ Kaupapa saved');
+  } else {
+    toast('⚠ Save failed');
+  }
+}
 async function rollDice() {
   if (allArtists.length === 0) { toast('Loading data first…'); await loadAllData(); }
   const panel = document.getElementById('dice-panel');
@@ -2272,16 +2353,20 @@ function adminArtistAutocomplete(val) {
 function renderAutocomplete(items, list, onSelect) {
   list.innerHTML = '';
   if (!items.length) { list.style.display = 'none'; return; }
+  // Build set of existing spotify IDs for directory check
+  const existingIds = new Set(allArtists.map(a => a.spotify_id?.toLowerCase()).filter(Boolean));
   items.forEach(artist => {
     const item = document.createElement('div');
     item.className = 'autocomplete-item';
     const img = artist.images?.[2]?.url || artist.images?.[0]?.url || '';
+    const inDirectory = existingIds.has(artist.id?.toLowerCase());
     item.innerHTML = `
       ${img ? `<img src="${img}" alt="${escHtml(artist.name)}">` : `<div style="width:36px;height:36px;border-radius:50%;background:var(--bg3);flex-shrink:0"></div>`}
-      <div class="autocomplete-item-info">
+      <div class="autocomplete-item-info" style="flex:1">
         <strong>${escHtml(artist.name)}</strong>
         <span>${(artist.genres||[]).slice(0,2).join(', ') || 'Artist'}</span>
-      </div>`;
+      </div>
+      ${inDirectory ? `<span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--success);background:#e5f5eb;padding:2px 7px;border-radius:2px;flex-shrink:0">In directory</span>` : ''}`;
     item.onclick = () => onSelect(artist);
     list.appendChild(item);
   });
@@ -2912,6 +2997,15 @@ function adminSection(id) {
   document.querySelectorAll('.admin-nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById('asec-' + id).classList.add('active');
   document.querySelector(`[data-asec="${id}"]`).classList.add('active');
+  if (id === 'kaupapa') {
+    // Pre-populate editor with current content
+    sheetsRead('kaupapa').then(rows => {
+      const editor = document.getElementById('kaupapa-editor');
+      if (editor && rows.length) {
+        editor.value = rows.map(r => r.content || Object.values(r)[0] || '').join('\n');
+      }
+    }).catch(() => {});
+  }
 }
 
 function switchTab(context, tabId) {
