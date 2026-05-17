@@ -1230,13 +1230,6 @@ function doPost(e) {
       // genres is column C (index 3), row is 0-indexed data row so +2 for header
       sheet.getRange(data.row + 2, 3).setValue(data.genres);
 
-    } else if (data.action === 'save_kaupapa') {
-      const sheet = ss.getSheetByName('kaupapa') || ss.insertSheet('kaupapa');
-      sheet.clearContents();
-      sheet.getRange(1,1).setValue('content');
-      // Store entire content as a single cell in row 2
-      sheet.getRange(2,1).setValue(data.content || '');
-
     } else if (data.action === 'remove_artist') {
       const sheet = ss.getSheetByName('artists');
       sheet.deleteRow(data.row + 2);
@@ -2204,45 +2197,26 @@ async function openArtistModal(a) {
 // ════════════════════════════════════════
 //  KAUPAPA PAGE
 // ════════════════════════════════════════
-async function loadKaupapa() {
+// ════════════════════════════════════════
+//  KAUPAPA PAGE — stored in localStorage
+// ════════════════════════════════════════
+const KAUPAPA_DEFAULT = `<h2>Kaupapa</h2>
+<p>Kaupapa is a Te Reo Māori word that roughly translates to policy, topic, foundation, plan, or purpose. It acts as a guiding principle or framework for action, embodying a set of values and collective goals.</p>
+<p>Add your content here via Admin → Kaupapa Page.</p>`;
+
+function loadKaupapa() {
   const loading = document.getElementById('kaupapa-loading');
   const content = document.getElementById('kaupapa-content');
   if (!loading || !content) return;
-  loading.style.display = 'flex';
-  content.style.display = 'none';
-  try {
-    const rows = await sheetsRead('kaupapa');
-    // Content is stored as a single value in the first data row
-    const text = (rows[0]?.content || '').trim();
-    if (!text) {
-      content.innerHTML = '<p style="color:var(--ink3)">Kaupapa content coming soon.</p>';
-    } else {
-      // Render as HTML if it contains tags, otherwise render as paragraphs
-      if (text.includes('<') && text.includes('>')) {
-        content.innerHTML = text;
-      } else {
-        content.innerHTML = text
-          .split(/\n\n+/)
-          .filter(Boolean)
-          .map(para => `<p style="margin-bottom:1.2rem">${escHtml(para).replace(/\n/g, '<br>')}</p>`)
-          .join('');
-      }
-    }
-    loading.style.display = 'none';
-    content.style.display = 'block';
-    // Populate admin editor
-    const editor = document.getElementById('kaupapa-editor');
-    if (editor && !editor.dataset.dirty) editor.innerHTML = text;
-  } catch {
-    loading.style.display = 'none';
-    content.innerHTML = '<p style="color:var(--ink3)">Kaupapa content coming soon.</p>';
-    content.style.display = 'block';
-  }
+  const stored = localStorage.getItem('kaupapa_content');
+  content.innerHTML = stored || KAUPAPA_DEFAULT;
+  loading.style.display = 'none';
+  content.style.display = 'block';
+  // Populate editor
+  const editor = document.getElementById('kaupapa-editor');
+  if (editor && !editor.dataset.dirty) editor.innerHTML = stored || KAUPAPA_DEFAULT;
 }
 
-// ════════════════════════════════════════
-//  RICH TEXT EDITOR HELPERS
-// ════════════════════════════════════════
 function rte(cmd, val) {
   document.getElementById('kaupapa-editor').focus();
   document.execCommand(cmd, false, val || null);
@@ -2257,23 +2231,15 @@ function rteClear() {
   }
 }
 
-async function saveKaupapa() {
+function saveKaupapa() {
   const editor = document.getElementById('kaupapa-editor');
   if (!editor) return;
   const html = editor.innerHTML.trim();
-  const ok = await sheetsWrite('save_kaupapa', { content: html });
+  localStorage.setItem('kaupapa_content', html);
+  editor.dataset.dirty = '';
   const status = document.getElementById('kaupapa-save-status');
-  if (!CONFIG.WEBHOOK_URL) {
-    toast('Demo mode: configure webhook to persist Kaupapa content');
-    return;
-  }
-  if (ok !== false) {
-    if (status) { status.style.display = 'block'; setTimeout(() => status.style.display = 'none', 3000); }
-    editor.dataset.dirty = '';
-    toast('✓ Kaupapa saved');
-  } else {
-    toast('⚠ Save failed');
-  }
+  if (status) { status.style.display = 'block'; setTimeout(() => status.style.display = 'none', 3000); }
+  toast('✓ Kaupapa saved');
 }
 async function rollDice() {
   if (allArtists.length === 0) { toast('Loading data first…'); await loadAllData(); }
@@ -3095,12 +3061,10 @@ function adminSection(id) {
   document.getElementById('asec-' + id).classList.add('active');
   document.querySelector(`[data-asec="${id}"]`).classList.add('active');
   if (id === 'kaupapa') {
-    sheetsRead('kaupapa').then(rows => {
-      const editor = document.getElementById('kaupapa-editor');
-      if (editor && !editor.dataset.dirty && rows.length) {
-        editor.innerHTML = rows[0]?.content || '';
-      }
-    }).catch(() => {});
+    const editor = document.getElementById('kaupapa-editor');
+    if (editor && !editor.dataset.dirty) {
+      editor.innerHTML = localStorage.getItem('kaupapa_content') || KAUPAPA_DEFAULT;
+    }
   }
 }
 
