@@ -1715,6 +1715,11 @@ async function sheetsRead(sheetName) {
   }
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(sheetName)}?key=${CONFIG.GAPI_KEY}`;
   const resp = await fetch(url);
+  if (resp.status === 400 || resp.status === 404) {
+    // Sheet tab doesn't exist — return empty rather than throwing
+    console.warn(`[AME] Sheet tab "${sheetName}" not found — returning empty`);
+    return [];
+  }
   if (!resp.ok) {
     const errText = await resp.text().catch(() => '');
     throw new Error(`Could not read "${sheetName}" sheet (${resp.status}). Check Sheet ID and API key in Settings. ${errText}`);
