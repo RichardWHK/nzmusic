@@ -888,10 +888,9 @@ footer a { color: var(--ink3); }
               <input class="form-input" id="submit-pl-desc" type="text" placeholder="e.g. Best of NZ Indie 2024" required>
             </div>
             <div class="form-group">
-              <label class="form-label">Primary genre</label>
-              <select class="form-select" id="submit-pl-genre">
-                <option value="">— Select genre —</option>
-              </select>
+              <label class="form-label">Genre(s) — select all that apply</label>
+              <div id="submit-pl-genre-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+              <input type="hidden" id="submit-pl-genre">
             </div>
           </div>
           <div class="form-group">
@@ -1314,8 +1313,11 @@ function doPost(e) {
         <input class="form-input" id="admin-pl-name" type="text" required>
       </div>
       <div class="form-group">
-        <label class="form-label">Genre(s) (comma-separated)</label>
-        <input class="form-input" id="admin-pl-genres" type="text" placeholder="indie, pop">
+        <label class="form-label">Genre(s) — select all that apply</label>
+        <div id="admin-pl-genre-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+        <input type="hidden" id="admin-pl-genres">
+        <p class="form-hint">Or type custom genres:</p>
+        <input class="form-input" id="admin-pl-genres-custom" type="text" placeholder="e.g. jazz, soul" style="margin-top:4px">
       </div>
       <div class="form-group">
         <label class="form-label">Curator</label>
@@ -2000,12 +2002,40 @@ function buildPillsInto(containerId, genres, active, onClick) {
 }
 
 function populateGenreSelects() {
-  const genres = getAllGenres().filter(g => g !== 'All');
-  ['submit-pl-genre'].forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    sel.innerHTML = '<option value="">— Select genre —</option>';
-    genres.forEach(g => { const o = document.createElement('option'); o.value = g; o.textContent = g; sel.appendChild(o); });
+  // Combine genres from both artists and playlists, deduplicated
+  const artistGenres = getAllGenres().filter(g => g !== 'All');
+  const playlistGenres = allPlaylists
+    .flatMap(p => parseGenres(p.genres))
+    .map(g => capitalise(g));
+  const combined = [...new Set([...artistGenres, ...playlistGenres])].sort();
+  buildGenrePicker('submit-pl-genre-pills', 'submit-pl-genre', combined);
+  buildGenrePicker('admin-pl-genre-pills', 'admin-pl-genres', combined);
+}
+
+function buildGenrePicker(containerId, hiddenInputId, genres) {
+  const container = document.getElementById(containerId);
+  const hidden = document.getElementById(hiddenInputId);
+  if (!container || !hidden) return;
+  container.innerHTML = '';
+  const selected = new Set();
+  genres.forEach(g => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'genre-pill';
+    btn.style.fontSize = '12px';
+    btn.style.padding = '5px 12px';
+    btn.textContent = g;
+    btn.onclick = () => {
+      if (selected.has(g)) {
+        selected.delete(g);
+        btn.classList.remove('active');
+      } else {
+        selected.add(g);
+        btn.classList.add('active');
+      }
+      hidden.value = Array.from(selected).join(', ');
+    };
+    container.appendChild(btn);
   });
 }
 
@@ -2088,10 +2118,14 @@ function buildPlaylistCard(p) {
   const card = document.createElement('div');
   card.className = 'card';
   const plId = extractSpotifyId(p.spotify_id || '', 'playlist');
+  const genreTags = parseGenres(p.genres).map(g =>
+    `<span class="card-genre-tag">${escHtml(g)}</span>`
+  ).join('');
   card.innerHTML = `
     <div class="card-body">
       <div class="card-name">${escHtml(p.name)}</div>
-      <div class="card-meta" style="margin-bottom:8px">${escHtml(p.description || p.genres || '')}</div>
+      ${genreTags ? `<div class="card-genres" style="margin:6px 0">${genreTags}</div>` : ''}
+      <div class="card-meta" style="margin-bottom:6px">${escHtml(p.description || '')}</div>
       ${p.curator ? `<div class="text-sm text-muted">Curated by ${escHtml(p.curator)}</div>` : ''}
       ${plId ? `<div class="embed-wrap mt-2"><iframe src="https://open.spotify.com/embed/playlist/${plId}?utm_source=generator" width="100%" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>` : ''}
     </div>`;
@@ -2895,7 +2929,15 @@ async function confirmImport() {
 //  ADD ARTIST / PLAYLIST (admin)
 // ════════════════════════════════════════
 function openAddArtistModal() { openModal('add-artist-modal'); }
-function openAddPlaylistModal() { openModal('add-playlist-modal'); }
+function openAddPlaylistModal() {
+  const artistGenres = getAllGenres().filter(g => g !== 'All');
+  const playlistGenres = allPlaylists.flatMap(p => parseGenres(p.genres)).map(g => capitalise(g));
+  const combined = [...new Set([...artistGenres, ...playlistGenres])].sort();
+  buildGenrePicker('admin-pl-genre-pills', 'admin-pl-genres', combined);
+  document.getElementById('admin-pl-genres').value = '';
+  document.getElementById('admin-pl-genres-custom').value = '';
+  openModal('add-playlist-modal');
+}
 
 async function adminAddArtist(e) {
   e.preventDefault();
@@ -2917,10 +2959,17 @@ async function adminAddPlaylist(e) {
   e.preventDefault();
   const id = extractSpotifyId(document.getElementById('admin-pl-url').value, 'playlist');
   if (!id) { toast('Invalid playlist URL'); return; }
+  // Merge pill selection + custom genres
+  const pillGenres = document.getElementById('admin-pl-genres').value;
+  const customGenres = document.getElementById('admin-pl-genres-custom').value;
+  const allGenres = [...new Set([
+    ...pillGenres.split(',').map(g => g.trim()).filter(Boolean),
+    ...customGenres.split(',').map(g => g.trim()).filter(Boolean),
+  ])].join(', ');
   await sheetsWrite('add_playlist', {
     name: document.getElementById('admin-pl-name').value,
     spotify_id: id,
-    genres: document.getElementById('admin-pl-genres').value,
+    genres: allGenres,
     curator: document.getElementById('admin-pl-curator').value,
     status: 'approved',
   });
