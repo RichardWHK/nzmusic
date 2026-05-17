@@ -1157,7 +1157,7 @@ function doOptions(e) {
 
 // Handle GET (health check)
 function doGet(e) {
-  return makeResponse({ ok: true, message: 'AME webhook active' });
+  return makeResponse({ ok: true, message: 'AME webhook active', version: '2.1' });
 }
 
 // Handle POST — all write actions
