@@ -1879,7 +1879,8 @@ function getDemoData(sheet) {
 //  LOAD DATA
 // ════════════════════════════════════════
 async function loadAllData() {
-  document.getElementById('explorer-loading').style.display = 'flex';
+  const loadingEl = document.getElementById('mix-loading');
+  if (loadingEl) loadingEl.style.display = 'flex';
   try {
     const rawArtists = await sheetsRead('artists');
     const rawPlaylists = await sheetsRead('playlists');
@@ -1911,7 +1912,8 @@ async function loadAllData() {
     console.error('[AME] loadAllData error:', err);
     toast('⚠ ' + err.message);
   } finally {
-    document.getElementById('explorer-loading').style.display = 'none';
+    const loadingEl = document.getElementById('mix-loading');
+    if (loadingEl) loadingEl.style.display = 'none';
   }
 }
 
