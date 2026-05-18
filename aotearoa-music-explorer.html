@@ -687,7 +687,7 @@ footer a { color: var(--ink3); }
       </h1>
       <p class="hero-sub">Discover New Zealand artists, tracks, and playlists — filtered by genre, curated with aroha.</p>
       <div class="hero-actions">
-        <button class="btn btn-primary" onclick="scrollToGenres()">Browse by Genre</button>
+        <button class="btn btn-primary" onclick="scrollToMixBuilder()">Make a Mix</button>
         <button class="btn btn-outline" onclick="showPage('artists')">All Artists</button>
         <button class="btn btn-outline" onclick="showPage('playlists')">Playlists</button>
       </div>
@@ -740,35 +740,66 @@ footer a { color: var(--ink3); }
     </div>
   </div>
 
-  <!-- Genre explore -->
-  <div class="section" id="genre-section">
+  <!-- ── GENRE MIX BUILDER ── -->
+  <div class="section" id="mix-builder-section">
     <div class="container">
+
       <div class="section-header">
-        <h2 class="section-title">Explore by Genre</h2>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span class="section-sub" id="artist-count-label"></span>
-          <button class="btn btn-outline btn-sm" id="genre-mix-btn" onclick="generateGenrePlaylistUI()" title="Generate a 10-track NZ mix for this genre" style="display:none">
-            🎵 Generate Genre Mix
-          </button>
-        </div>
+        <h2 class="section-title">Make a Mix</h2>
+        <span class="section-sub">Pick genres, get a personalised NZ mix</span>
       </div>
-      <div class="genre-row" id="genre-pills"></div>
-      <div id="genre-mix-panel" style="display:none;margin-bottom:2rem">
-        <div style="border:1.5px solid var(--ink);border-radius:var(--radius-lg);overflow:hidden">
-          <div style="background:var(--ink);color:var(--accent-inv);padding:1rem 1.5rem;font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between">
-            <span id="genre-mix-title">Genre Mix</span>
-            <button class="btn btn-sm" style="color:var(--accent-inv);border-color:rgba(255,255,255,0.3);background:none;border:1px solid rgba(255,255,255,0.3)" onclick="document.getElementById('genre-mix-panel').style.display='none'">Close</button>
+
+      <!-- Step 1: Genre selection -->
+      <div style="margin-bottom:2rem">
+        <p style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3);margin-bottom:1rem">Select one or more genres</p>
+        <div class="genre-row" id="mix-genre-pills"></div>
+      </div>
+
+      <!-- Generate button -->
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:2rem">
+        <button class="btn btn-primary" id="mix-generate-btn" onclick="generateMix()" disabled
+          style="opacity:0.4;transition:opacity 0.2s">
+          🎵 Generate Mix
+        </button>
+        <button class="btn btn-outline" id="mix-regenerate-btn" onclick="generateMix()" style="display:none">
+          ↺ Regenerate
+        </button>
+        <span id="mix-selected-label" style="font-size:13px;color:var(--ink3)">Select a genre to begin</span>
+        <button id="mix-share-btn" onclick="shareMix()" style="display:none;margin-left:auto"
+          class="btn btn-outline btn-sm">
+          ↗ Share this mix
+        </button>
+      </div>
+
+      <!-- Mix result -->
+      <div id="mix-result" style="display:none">
+        <div style="border:1.5px solid var(--ink);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:2rem">
+          <div style="background:var(--ink);color:var(--accent-inv);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem">
+            <div>
+              <div style="font-family:var(--font-display);font-size:1.4rem;letter-spacing:1px" id="mix-title">NZ Mix</div>
+              <div style="font-size:12px;opacity:0.6;margin-top:2px" id="mix-subtitle"></div>
+            </div>
+            <span id="mix-share-copied" style="font-size:12px;opacity:0;transition:opacity 0.3s;flex-shrink:0">✓ Link copied!</span>
           </div>
-          <div id="genre-mix-tracks" style="padding:1.5rem;background:var(--bg);display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px"></div>
+          <div id="mix-tracks" style="padding:1.5rem;background:var(--bg);display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px"></div>
+        </div>
+
+        <!-- Recommended playlists -->
+        <div id="mix-recommended" style="display:none">
+          <div class="section-header" style="margin-bottom:1.25rem">
+            <h3 class="section-title" style="font-size:1.8rem">Playlists you might like</h3>
+            <span class="section-sub" id="mix-rec-label"></span>
+          </div>
+          <div id="mix-rec-grid" class="grid-2"></div>
         </div>
       </div>
-      <div id="explorer-loading" class="loading-center" style="display:none">
-        <div class="loading-ring"></div><span>Loading NZ artists…</span>
+
+      <!-- Mix loading state -->
+      <div id="mix-loading" style="display:none" class="loading-center">
+        <div class="loading-ring"></div>
+        <span id="mix-loading-text">Finding NZ tracks…</span>
       </div>
-      <div id="explorer-grid" class="grid-3"></div>
-      <div style="text-align:center;margin-top:2rem">
-        <button id="explorer-load-more" class="btn btn-outline" style="display:none" onclick="explorerLoadMore()">Load more artists</button>
-      </div>
+
     </div>
   </div>
 
@@ -1865,7 +1896,6 @@ async function loadAllData() {
     }
 
     buildGenrePills();
-    renderExplorerGrid('All');
     renderFeaturedPlaylists();
     renderArtistsPage();
     renderPlaylistsPage();
@@ -2018,13 +2048,7 @@ function filterByGenre(artists, genre) {
 
 function buildGenrePills() {
   const genres = getAllGenres();
-  buildPillsInto('genre-pills', genres, activeGenre, g => {
-    activeGenre = g;
-    renderExplorerGrid(g);
-    const mixBtn = document.getElementById('genre-mix-btn');
-    mixBtn.style.display = g === 'All' ? 'none' : 'inline-flex';
-    document.getElementById('genre-mix-panel').style.display = 'none';
-  });
+  buildMixGenrePills(); // explorer page mix builder
   buildPillsInto('artists-genre-pills', genres, artistsActiveGenre, g => { artistsActiveGenre = g; renderArtistsPage(); });
   buildPillsInto('playlists-genre-pills', ['All', ...new Set(allPlaylists.flatMap(p => (p.genres||'').split(',').map(g => g.trim().charAt(0).toUpperCase() + g.trim().slice(1))))].filter(Boolean), playlistsActiveGenre, g => { playlistsActiveGenre = g; renderPlaylistsPage(); });
 }
@@ -2087,37 +2111,181 @@ function buildGenrePicker(containerId, hiddenInputId, genres) {
 // ════════════════════════════════════════
 //  RENDER EXPLORER
 // ════════════════════════════════════════
+// ════════════════════════════════════════
+//  GENRE MIX BUILDER
+// ════════════════════════════════════════
+let selectedMixGenres = new Set();
+
+function scrollToMixBuilder() {
+  document.getElementById('mix-builder-section').scrollIntoView({ behavior: 'smooth' });
+}
+function scrollToGenres() { scrollToMixBuilder(); }
+
+function buildMixGenrePills() {
+  const container = document.getElementById('mix-genre-pills');
+  if (!container) return;
+  const genres = getAllGenres().filter(g => g !== 'All');
+  container.innerHTML = '';
+  genres.forEach(g => {
+    const btn = document.createElement('button');
+    btn.className = 'genre-pill';
+    btn.textContent = g;
+    btn.onclick = () => {
+      if (selectedMixGenres.has(g)) {
+        selectedMixGenres.delete(g);
+        btn.classList.remove('active');
+      } else {
+        selectedMixGenres.add(g);
+        btn.classList.add('active');
+      }
+      updateMixControls();
+    };
+    container.appendChild(btn);
+  });
+
+  // Pre-select from URL params
+  const params = new URLSearchParams(window.location.search);
+  const urlGenres = params.get('genres');
+  if (urlGenres) {
+    urlGenres.split(',').forEach(g => {
+      const match = genres.find(genre => genre.toLowerCase() === decodeURIComponent(g).toLowerCase());
+      if (match) {
+        selectedMixGenres.add(match);
+        container.querySelectorAll('.genre-pill').forEach(btn => {
+          if (btn.textContent === match) btn.classList.add('active');
+        });
+      }
+    });
+    if (selectedMixGenres.size > 0) {
+      updateMixControls();
+      setTimeout(generateMix, 800);
+    }
+  }
+}
+
+function updateMixControls() {
+  const btn = document.getElementById('mix-generate-btn');
+  const label = document.getElementById('mix-selected-label');
+  const count = selectedMixGenres.size;
+  if (count === 0) {
+    btn.disabled = true;
+    btn.style.opacity = '0.4';
+    label.textContent = 'Select a genre to begin';
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    label.textContent = count + ' genre' + (count > 1 ? 's' : '') + ' selected: ' + Array.from(selectedMixGenres).join(', ');
+  }
+}
+
+async function generateMix() {
+  if (selectedMixGenres.size === 0) return;
+  const genreList = Array.from(selectedMixGenres);
+  const loading = document.getElementById('mix-loading');
+  const result = document.getElementById('mix-result');
+  const tracksDiv = document.getElementById('mix-tracks');
+
+  result.style.display = 'none';
+  loading.style.display = 'flex';
+  document.getElementById('mix-loading-text').textContent = 'Finding NZ tracks…';
+  document.getElementById('mix-builder-section').scrollIntoView({ behavior: 'smooth' });
+
+  // Artists matching selected genres
+  let pool = allArtists.filter(a =>
+    genreList.some(g => parseGenres(a.genres).some(ag =>
+      ag.toLowerCase().includes(g.toLowerCase()) || g.toLowerCase().includes(ag.toLowerCase())
+    ))
+  );
+  if (pool.length < 3) pool = allArtists; // broaden if too few
+
+  const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 12);
+  const trackData = [];
+
+  for (const a of shuffled) {
+    document.getElementById('mix-loading-text').textContent = 'Finding tracks from ' + a.name + '…';
+    try {
+      const data = await spotifyFetch('/search?q=artist:' + encodeURIComponent(a.name) + '&type=track&limit=5&market=NZ');
+      const items = data?.tracks?.items?.filter(t => t?.id);
+      if (items?.length) {
+        const track = items[Math.floor(Math.random() * Math.min(3, items.length))];
+        trackData.push({ track, artist: a });
+      }
+    } catch {}
+    if (trackData.length >= 10) break;
+  }
+
+  loading.style.display = 'none';
+
+  if (!trackData.length) {
+    result.style.display = 'block';
+    tracksDiv.innerHTML = '<p class="text-muted" style="padding:1rem">Could not load tracks right now — try again in a moment.</p>';
+    document.getElementById('mix-regenerate-btn').style.display = 'inline-flex';
+    return;
+  }
+
+  // Title
+  const titleEl = document.getElementById('mix-title');
+  titleEl.textContent = genreList.length === 1
+    ? genreList[0] + ' Mix'
+    : genreList.slice(0,-1).join(', ') + ' & ' + genreList.slice(-1) + ' Mix';
+  document.getElementById('mix-subtitle').textContent =
+    trackData.length + ' NZ tracks · ' + pool.length + ' artists in the mix';
+
+  // Tracks
+  tracksDiv.innerHTML = trackData.map(({ track }) => `
+    <div>
+      <iframe src="https://open.spotify.com/embed/track/${track.id}?utm_source=generator"
+        width="100%" height="80" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy" style="border:none;border-radius:var(--radius);display:block"></iframe>
+    </div>`).join('');
+
+  result.style.display = 'block';
+  document.getElementById('mix-regenerate-btn').style.display = 'inline-flex';
+  document.getElementById('mix-share-btn').style.display = 'inline-flex';
+
+  // Recommended playlists
+  const matching = allPlaylists.filter(p =>
+    genreList.some(g => parseGenres(p.genres).some(pg =>
+      pg.toLowerCase().includes(g.toLowerCase()) || g.toLowerCase().includes(pg.toLowerCase())
+    ))
+  );
+  const recSection = document.getElementById('mix-recommended');
+  const recGrid = document.getElementById('mix-rec-grid');
+  if (matching.length) {
+    document.getElementById('mix-rec-label').textContent =
+      matching.length + ' playlist' + (matching.length > 1 ? 's' : '') + ' matching your genres';
+    recGrid.innerHTML = '';
+    matching.slice(0, 4).forEach(p => recGrid.appendChild(buildPlaylistCard(p)));
+    recSection.style.display = 'block';
+  } else {
+    recSection.style.display = 'none';
+  }
+}
+
+async function shareMix() {
+  const genres = Array.from(selectedMixGenres).join(',');
+  const url = window.location.origin + window.location.pathname + '?genres=' + encodeURIComponent(genres);
+  try {
+    await navigator.clipboard.writeText(url);
+    const copied = document.getElementById('mix-share-copied');
+    copied.style.opacity = '1';
+    setTimeout(() => copied.style.opacity = '0', 2500);
+  } catch {
+    prompt('Copy this link to share your mix:', url);
+  }
+}
+
 let explorerPage = 0;
 let explorerFiltered = [];
 const EXPLORER_PAGE_SIZE = 12;
 
-function renderExplorerGrid(genre) {
-  explorerPage = 0;
-  explorerFiltered = filterByGenre(allArtists, genre);
-  document.getElementById('artist-count-label').textContent = explorerFiltered.length + ' artists';
-  const grid = document.getElementById('explorer-grid');
-  grid.innerHTML = '';
-  if (!explorerFiltered.length) {
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No artists found for this genre.</div>';
-    document.getElementById('explorer-load-more').style.display = 'none';
-    return;
-  }
-  explorerFiltered.slice(0, EXPLORER_PAGE_SIZE).forEach(a => grid.appendChild(buildArtistCard(a)));
-  document.getElementById('explorer-load-more').style.display =
-    explorerFiltered.length > EXPLORER_PAGE_SIZE ? 'inline-flex' : 'none';
-  explorerPage = 1;
+function renderExplorerGrid() {
+  // No-op — explorer grid removed in favour of mix builder
+  // Artists page handles the full directory
 }
 
-function explorerLoadMore() {
-  const start = explorerPage * EXPLORER_PAGE_SIZE;
-  const slice = explorerFiltered.slice(start, start + EXPLORER_PAGE_SIZE);
-  const grid = document.getElementById('explorer-grid');
-  slice.forEach(a => grid.appendChild(buildArtistCard(a)));
-  explorerPage++;
-  if (explorerPage * EXPLORER_PAGE_SIZE >= explorerFiltered.length) {
-    document.getElementById('explorer-load-more').style.display = 'none';
-  }
-}
+function explorerLoadMore() {}
+
 
 function buildArtistCard(a) {
   const card = document.createElement('div');
@@ -2339,55 +2507,6 @@ async function rollDice() {
 // ════════════════════════════════════════
 //  GENRE PLAYLIST GENERATOR
 // ════════════════════════════════════════
-async function generateGenrePlaylistUI() {
-  if (activeGenre === 'All') { toast('Select a genre first'); return; }
-  const panel = document.getElementById('genre-mix-panel');
-  const tracksDiv = document.getElementById('genre-mix-tracks');
-  const titleEl = document.getElementById('genre-mix-title');
-  titleEl.textContent = activeGenre + ' — NZ Explorer Mix';
-  panel.style.display = 'block';
-  tracksDiv.innerHTML = '<div class="loading-center" style="grid-column:1/-1"><div class="loading-ring"></div><span>Finding NZ ' + activeGenre + ' tracks…</span></div>';
-  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-  const artists = filterByGenre(allArtists, activeGenre);
-  if (!artists.length) { tracksDiv.innerHTML = '<p class="text-muted">No artists found for this genre.</p>'; return; }
-
-  // Shuffle and pick up to 10 artists
-  const shuffled = [...artists].sort(() => Math.random() - 0.5).slice(0, 10);
-  const trackIds = [];
-  const trackData = [];
-
-  for (const a of shuffled) {
-    try {
-      const data = await spotifyFetch(`/search?q=artist:${encodeURIComponent(a.name)}&type=track&limit=5&market=NZ`);
-      const tracks = data?.tracks?.items?.filter(t => t?.id);
-      if (tracks?.length) {
-        const track = tracks[Math.floor(Math.random() * tracks.length)];
-        trackIds.push(track.id);
-        trackData.push({ track, artist: a });
-      }
-    } catch {}
-    if (trackIds.length >= 10) break;
-  }
-
-  if (!trackIds.length) { tracksDiv.innerHTML = '<p class="text-muted">Could not load tracks. Make sure Spotify is connected.</p>'; return; }
-
-  tracksDiv.innerHTML = trackData.map(({ track, artist }) => `
-    <div>
-      <iframe
-        src="https://open.spotify.com/embed/track/${track.id}?utm_source=generator"
-        width="100%" height="80"
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-        loading="lazy" style="border:none;border-radius:var(--radius)"></iframe>
-    </div>`).join('');
-}
-
-async function generateGenrePlaylist(genre) {
-  activeGenre = genre;
-  document.getElementById('genre-mix-btn').style.display = 'inline-flex';
-  await generateGenrePlaylistUI();
-}
-
 // ════════════════════════════════════════
 //  AUTOCOMPLETE (public submissions)
 // ════════════════════════════════════════
