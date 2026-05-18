@@ -2160,7 +2160,7 @@ function buildMixGenrePills() {
     });
     if (selectedMixGenres.size > 0) {
       updateMixControls();
-      setTimeout(generateMix, 800);
+      setTimeout(generateMix, 1200); // wait for page to fully settle
     }
   }
 }
@@ -2190,7 +2190,6 @@ async function generateMix() {
   result.style.display = 'none';
   loading.style.display = 'flex';
   document.getElementById('mix-loading-text').textContent = 'Finding NZ tracks…';
-  document.getElementById('mix-builder-section').scrollIntoView({ behavior: 'smooth' });
 
   // Artists matching selected genres
   let pool = allArtists.filter(a =>
@@ -2242,6 +2241,7 @@ async function generateMix() {
     </div>`).join('');
 
   result.style.display = 'block';
+  document.getElementById('mix-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
   document.getElementById('mix-regenerate-btn').style.display = 'inline-flex';
   document.getElementById('mix-share-btn').style.display = 'inline-flex';
 
