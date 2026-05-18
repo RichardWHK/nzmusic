@@ -1113,7 +1113,22 @@ footer a { color: var(--ink3); }
             </div>
 
             <hr class="divider">
-            <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:0.5rem">Diagnostics</h3>
+            <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:0.5rem">Change Admin Password</h3>
+            <p style="font-size:13px;color:var(--ink2);margin-bottom:1rem">Stored as a hash in localStorage — not visible in source code after saving.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+              <div class="form-group" style="margin:0">
+                <label class="form-label">New password</label>
+                <input class="form-input" id="cfg-admin-pw" type="password" placeholder="Enter new password">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">Confirm password</label>
+                <input class="form-input" id="cfg-admin-pw-confirm" type="password" placeholder="Confirm new password">
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="saveAdminPassword()">Update Password</button>
+            <div id="pw-save-status" style="font-size:13px;margin-top:8px;display:none"></div>
+
+            <hr class="divider">
             <p style="font-size:13px;color:var(--ink2);margin-bottom:1rem">Check what's actually coming back from your Google Sheet.</p>
             <button class="btn btn-outline btn-sm" onclick="runDiagnostics()">Run Sheet Diagnostics</button>
             <div id="diagnostics-output" style="display:none;margin-top:1rem;background:var(--bg2);border:1px solid var(--border-strong);border-radius:var(--radius);padding:1rem;font-size:13px;font-family:monospace;white-space:pre-wrap;max-height:300px;overflow-y:auto"></div>
@@ -1405,7 +1420,6 @@ const CONFIG = {
   SHEET_ID:           '1dJF0C7FN1pI2VC3SB5KroBykWZc9_oWnKJFFi7c3UXc',
   GAPI_KEY:           localStorage.getItem('cfg_gapi_key') || '', // loaded from Netlify proxy
   WEBHOOK_URL:        'https://script.google.com/macros/s/AKfycbyFsg1XeqybwKiGvNRngqBsEz9dFBXZRwuzUggSv0rv_1deSSnAiih0g8LbdO_dG2yoWQ/exec',
-  ADMIN_PASSWORD:     localStorage.getItem('cfg_admin_pw') || 'aotearoa2025',
   PROXY_TOKEN_URL:    'https://nzmusic.netlify.app/.netlify/functions/spotify-token',
 };
 
@@ -2545,19 +2559,62 @@ function initAdmin() {
   else { document.getElementById('admin-login-gate').style.display = 'flex'; document.getElementById('admin-dashboard').style.display = 'none'; }
 }
 
+// ════════════════════════════════════════
+//  ADMIN PASSWORD — hashed via proxy
+// ════════════════════════════════════════
+async function hashPassword(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
 async function adminLogin() {
   const pw = document.getElementById('admin-password-input').value;
-  // Reload config in case it was updated via Settings
-  CONFIG.ADMIN_PASSWORD = localStorage.getItem('cfg_admin_pw') || 'aotearoa2025';
-  if (pw === CONFIG.ADMIN_PASSWORD) {
-    sessionStorage.setItem('admin_logged_in', 'true');
-    adminLoggedIn = true;
-    showAdminDashboard();
-  } else {
-    const errEl = document.getElementById('admin-login-error');
-    errEl.textContent = 'Incorrect password.';
+  const errEl = document.getElementById('admin-login-error');
+  const btn = document.querySelector('#admin-login-gate .btn-primary');
+  errEl.style.display = 'none';
+  if (btn) { btn.disabled = true; btn.textContent = 'Verifying…'; }
+
+  try {
+    const hash = await hashPassword(pw);
+    const resp = await fetch(CONFIG.PROXY_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'verify_admin', hash }),
+    });
+    const data = await resp.json();
+    if (data.valid) {
+      sessionStorage.setItem('admin_logged_in', 'true');
+      adminLoggedIn = true;
+      showAdminDashboard();
+    } else {
+      errEl.textContent = 'Incorrect password.';
+      errEl.style.display = 'block';
+    }
+  } catch (err) {
+    errEl.textContent = 'Could not verify — check your connection.';
     errEl.style.display = 'block';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Sign in'; }
   }
+}
+
+async function saveAdminPassword() {
+  const pw = document.getElementById('cfg-admin-pw').value;
+  const confirm = document.getElementById('cfg-admin-pw-confirm').value;
+  const status = document.getElementById('pw-save-status');
+  if (!pw) { status.innerHTML = 'Please enter a password.'; status.style.color = 'var(--danger)'; status.style.display = 'block'; return; }
+  if (pw !== confirm) { status.innerHTML = 'Passwords do not match.'; status.style.color = 'var(--danger)'; status.style.display = 'block'; return; }
+  if (pw.length < 8) { status.innerHTML = 'Password must be at least 8 characters.'; status.style.color = 'var(--danger)'; status.style.display = 'block'; return; }
+  const hash = await hashPassword(pw);
+  status.innerHTML = `
+    <strong>Copy this hash and set it as <code>ADMIN_PASSWORD_HASH</code> in your Netlify environment variables:</strong><br>
+    <code style="display:block;margin:8px 0;padding:8px;background:var(--bg2);border-radius:var(--radius);word-break:break-all;font-size:12px;user-select:all">${hash}</code>
+    Netlify → Site configuration → Environment variables → Add/update <code>ADMIN_PASSWORD_HASH</code><br>
+    Then redeploy the Netlify function.`;
+  status.style.color = 'var(--ink)';
+  status.style.display = 'block';
+  document.getElementById('cfg-admin-pw').value = '';
+  document.getElementById('cfg-admin-pw-confirm').value = '';
 }
 
 function adminLogout() {
