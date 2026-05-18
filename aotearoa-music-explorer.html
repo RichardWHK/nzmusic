@@ -731,7 +731,7 @@ footer a { color: var(--ink3); }
 
   <!-- Dice result -->
   <div class="section-sm container">
-    <div class="dice-panel" id="dice-panel">
+    <div class="dice-panel" id="dice-panel" style="scroll-margin-top:80px">
       <div class="dice-panel-header">
         <span>🎲 Your Random Discovery</span>
         <button class="btn btn-outline btn-sm" style="color:var(--accent-inv);border-color:rgba(255,255,255,0.3)" onclick="rollDice()">Roll again</button>
@@ -2029,11 +2029,11 @@ function parseGenres(genreStr) {
 }
 
 function getAllGenres() {
-  const set = new Set(['All']);
+  const set = new Set();
   allArtists.forEach(a => {
     parseGenres(a.genres).forEach(g => set.add(g));
   });
-  return Array.from(set);
+  return ['All', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
 }
 
 function capitalise(s) {
@@ -2191,15 +2191,22 @@ async function generateMix() {
   loading.style.display = 'flex';
   document.getElementById('mix-loading-text').textContent = 'Finding NZ tracks…';
 
-  // Artists matching selected genres
-  let pool = allArtists.filter(a =>
+  // Artists matching selected genres — strictly filtered, never broadened
+  const pool = allArtists.filter(a =>
     genreList.some(g => parseGenres(a.genres).some(ag =>
       ag.toLowerCase().includes(g.toLowerCase()) || g.toLowerCase().includes(ag.toLowerCase())
     ))
   );
-  if (pool.length < 3) pool = allArtists; // broaden if too few
 
-  const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 12);
+  if (!pool.length) {
+    loading.style.display = 'none';
+    result.style.display = 'block';
+    tracksDiv.innerHTML = '<p class="text-muted" style="padding:1rem">No artists found for the selected genre(s). Try adding more genres or check that your artists have genres set.</p>';
+    document.getElementById('mix-regenerate-btn').style.display = 'inline-flex';
+    return;
+  }
+
+  const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, Math.min(10, pool.length));
   const trackData = [];
 
   for (const a of shuffled) {
@@ -2454,7 +2461,7 @@ async function rollDice() {
   const result = document.getElementById('dice-result');
   panel.classList.add('show');
   result.innerHTML = '<div class="loading-center"><div class="loading-ring"></div><span>Rolling…</span></div>';
-  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+  setTimeout(() => panel.scrollIntoView({behavior:'smooth', block:'start'}), 100);
 
   // Only include types we have data for
   const types = ['artist'];
