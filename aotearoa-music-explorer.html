@@ -1199,14 +1199,15 @@ function doPost(e) {
       const row = subSheet.getRange(data.row + 2, 1, 1, 9).getValues()[0];
       subSheet.getRange(data.row + 2, 9).setValue('approved');
       const plSheet = ss.getSheetByName('playlists');
-      // playlists columns: name, spotify_id, genres, curator, description, status
+      // playlists columns: name, spotify_id, genres, curator, description, status, curator_url
       plSheet.appendRow([
         row[1],  // name = description field
         row[0],  // spotify_id
         row[3],  // genres = genre field
         row[4],  // curator = submitter_name
         row[2],  // description = about field
-        'approved'
+        'approved',
+        row[6],  // curator_url = submitter_social
       ]);
 
     } else if (data.action === 'reject_submission') {
@@ -1230,9 +1231,11 @@ function doPost(e) {
 
     } else if (data.action === 'add_playlist') {
       const sheet = ss.getSheetByName('playlists');
+      // playlists columns: name, spotify_id, genres, curator, description, status, curator_url
       sheet.appendRow([
         data.name, data.spotify_id, data.genres,
-        data.curator || '', data.description || '', data.status
+        data.curator || '', data.description || '', data.status,
+        data.curator_url || ''
       ]);
 
     } else if (data.action === 'update_artist_genres') {
@@ -1341,6 +1344,11 @@ function doPost(e) {
         <label class="form-label">Curator</label>
         <input class="form-input" id="admin-pl-curator" type="text" placeholder="Curated by…">
       </div>
+      <div class="form-group">
+        <label class="form-label">Curator URL (optional)</label>
+        <input class="form-input" id="admin-pl-curator-url" type="url" placeholder="https://…">
+        <p class="form-hint">Links the curator name on the playlist card</p>
+      </div>
       <button class="btn btn-primary w-full" type="submit">Add Playlist</button>
     </form>
   </div>
@@ -1393,11 +1401,11 @@ function doPost(e) {
 //  OR set them via Admin > Settings
 // ════════════════════════════════════════
 const CONFIG = {
-  SPOTIFY_CLIENT_ID:  localStorage.getItem('cfg_spotify_id')  || 'bff400e0288a4be2a12f4dbb3b1259a3',
-  SHEET_ID:           localStorage.getItem('cfg_sheet_id')    || '1dJF0C7FN1pI2VC3SB5KroBykWZc9_oWnKJFFi7c3UXc',
-  GAPI_KEY:           localStorage.getItem('cfg_gapi_key')    || 'AIzaSyDu7i6pNR-y8vegjo8ZX-TIzbVCaHp_Zi0',
-  WEBHOOK_URL:        localStorage.getItem('cfg_webhook')     || 'https://script.google.com/macros/s/AKfycbyFsg1XeqybwKiGvNRngqBsEz9dFBXZRwuzUggSv0rv_1deSSnAiih0g8LbdO_dG2yoWQ/exec',
-  ADMIN_PASSWORD:     localStorage.getItem('cfg_admin_pw')    || 'aotearoa2025',
+  SPOTIFY_CLIENT_ID:  'bff400e0288a4be2a12f4dbb3b1259a3',
+  SHEET_ID:           '1dJF0C7FN1pI2VC3SB5KroBykWZc9_oWnKJFFi7c3UXc',
+  GAPI_KEY:           localStorage.getItem('cfg_gapi_key') || '', // loaded from Netlify proxy
+  WEBHOOK_URL:        'https://script.google.com/macros/s/AKfycbyFsg1XeqybwKiGvNRngqBsEz9dFBXZRwuzUggSv0rv_1deSSnAiih0g8LbdO_dG2yoWQ/exec',
+  ADMIN_PASSWORD:     localStorage.getItem('cfg_admin_pw') || 'aotearoa2025',
   PROXY_TOKEN_URL:    'https://nzmusic.netlify.app/.netlify/functions/spotify-token',
 };
 
@@ -1564,7 +1572,12 @@ async function getSpotifyToken() {
             proxyTokenExpiry = Date.now() + (data.expires_in - 120) * 1000;
             sessionStorage.setItem('proxy_token', proxyToken);
             sessionStorage.setItem('proxy_token_exp', String(proxyTokenExpiry));
-            console.log('[AME] Proxy token acquired — images load for everyone');
+            // Securely store Google API key from proxy
+            if (data.google_api_key) {
+              CONFIG.GAPI_KEY = data.google_api_key;
+              sessionStorage.setItem('gapi_key', data.google_api_key);
+            }
+            console.log('[AME] Proxy v' + (data.version||'?') + ' — token acquired');
             return proxyToken;
           }
           console.warn('[AME] Proxy returned', resp.status);
@@ -2144,7 +2157,7 @@ function buildPlaylistCard(p) {
       <div class="card-name">${escHtml(p.name)}</div>
       ${genreTags ? `<div class="card-genres" style="margin:6px 0">${genreTags}</div>` : ''}
       <div class="card-meta" style="margin-bottom:6px">${escHtml(p.description || '')}</div>
-      ${p.curator ? `<div class="text-sm text-muted">Curated by ${escHtml(p.curator)}</div>` : ''}
+      ${p.curator ? `<div class="text-sm text-muted">Curated by ${p.curator_url ? `<a href="${escHtml(p.curator_url)}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline">${escHtml(p.curator)}</a>` : escHtml(p.curator)}</div>` : ''}
       ${plId ? `<div class="embed-wrap mt-2"><iframe src="https://open.spotify.com/embed/playlist/${plId}?utm_source=generator" width="100%" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>` : ''}
     </div>`;
   return card;
@@ -2982,6 +2995,7 @@ async function adminAddPlaylist(e) {
     spotify_id: id,
     genres: allGenres,
     curator: document.getElementById('admin-pl-curator').value,
+    curator_url: document.getElementById('admin-pl-curator-url').value,
     status: 'approved',
   });
   closeModal('add-playlist-modal');
@@ -3145,6 +3159,10 @@ function scrollToGenres() {
 //  INIT
 // ════════════════════════════════════════
 (async function init() {
+  // Restore cached Google API key from previous proxy fetch
+  const cachedGapiKey = sessionStorage.getItem('gapi_key') || localStorage.getItem('cfg_gapi_key');
+  if (cachedGapiKey) CONFIG.GAPI_KEY = cachedGapiKey;
+
   // Clear any stale Spotify tokens
   const storedExpiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
   if (storedExpiry && Date.now() > storedExpiry) {
