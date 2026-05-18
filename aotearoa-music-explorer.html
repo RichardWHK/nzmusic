@@ -3163,6 +3163,30 @@ function scrollToGenres() {
   const cachedGapiKey = sessionStorage.getItem('gapi_key') || localStorage.getItem('cfg_gapi_key');
   if (cachedGapiKey) CONFIG.GAPI_KEY = cachedGapiKey;
 
+  // Fetch proxy token early so Google API key is available before loadAllData
+  // This ensures sheets can be read on first load
+  if (!CONFIG.GAPI_KEY && CONFIG.PROXY_TOKEN_URL) {
+    try {
+      const resp = await fetch(CONFIG.PROXY_TOKEN_URL);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.google_api_key) {
+          CONFIG.GAPI_KEY = data.google_api_key;
+          sessionStorage.setItem('gapi_key', data.google_api_key);
+        }
+        if (data.access_token) {
+          proxyToken = data.access_token;
+          proxyTokenExpiry = Date.now() + (data.expires_in - 120) * 1000;
+          sessionStorage.setItem('proxy_token', data.access_token);
+          sessionStorage.setItem('proxy_token_exp', String(proxyTokenExpiry));
+        }
+        console.log('[AME] Proxy v' + (data.version||'?') + ' — init complete');
+      }
+    } catch (err) {
+      console.warn('[AME] Early proxy fetch failed:', err.message);
+    }
+  }
+
   // Clear any stale Spotify tokens
   const storedExpiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
   if (storedExpiry && Date.now() > storedExpiry) {
