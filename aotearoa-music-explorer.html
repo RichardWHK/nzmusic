@@ -1095,7 +1095,8 @@ footer a { color: var(--ink3); }
         <div class="admin-section" id="asec-artists">
           <div class="section-header">
             <h2 class="section-title">Artists</h2>
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="backfillImages()" title="Cache artist images in sheet to reduce Spotify API calls">↺ Backfill Images</button>
               <button class="btn btn-outline btn-sm" onclick="backfillGenres()" title="Fetch genres from Spotify for any artist missing them">↺ Backfill Genres</button>
               <button class="btn btn-primary btn-sm" onclick="openAddArtistModal()">+ Add Artist</button>
             </div>
@@ -1323,6 +1324,12 @@ function doPost(e) {
         data.curator || '', data.description || '', data.status,
         data.curator_url || ''
       ]);
+
+    } else if (data.action === 'update_artist_image') {
+      const sheet = ss.getSheetByName('artists');
+      // image_url is column H (index 8), row is 0-indexed data row so +2 for header
+      // artists columns: name(1), spotify_id(2), genres(3), region(4), bio(5), status(6), match_confidence(7), image_url(8)
+      sheet.getRange(data.row + 2, 8).setValue(data.image_url);
 
     } else if (data.action === 'update_artist_genres') {
       const sheet = ss.getSheetByName('artists');
@@ -2384,10 +2391,15 @@ function buildArtistCard(a) {
   const genres = parseGenres(a.genres);
   const imgId = a.spotify_id;
 
+  // Use cached image from sheet if available — no Spotify API call needed
+  const imgHtml = a.image_url
+    ? `<img class="card-img" src="${escHtml(a.image_url)}" alt="${escHtml(a.name)}" loading="lazy">`
+    : `<div class="card-img-placeholder" id="art-${imgId}" data-spotify-id="${escHtml(a.spotify_id)}">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+       </div>`;
+
   card.innerHTML = `
-    <div class="card-img-placeholder" id="art-${imgId}" data-spotify-id="${escHtml(a.spotify_id)}">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-    </div>
+    ${imgHtml}
     <div class="card-body">
       <div class="card-name">${escHtml(a.name)}</div>
       <div class="card-genres">
@@ -2401,8 +2413,8 @@ function buildArtistCard(a) {
       </a>
     </div>`;
 
-  // Observe placeholder — image loads when card scrolls into view
-  if (a.spotify_id) {
+  // Only use observer if no cached image — saves Spotify API calls
+  if (!a.image_url && a.spotify_id) {
     const placeholder = card.querySelector('.card-img-placeholder');
     if (placeholder) imageObserver.observe(placeholder);
   }
@@ -3084,6 +3096,45 @@ async function loadAdminArtists() {
 }
 
 function adminFilterArtists() { loadAdminArtists(); }
+
+async function backfillImages() {
+  const btn = document.querySelector('[onclick="backfillImages()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '↺ Fetching…'; }
+
+  let updated = 0, skipped = 0, failed = 0;
+  const artists = await sheetsRead('artists');
+  const missing = artists.filter(a => a.spotify_id && (!a.image_url || !a.image_url.trim()));
+
+  if (!missing.length) {
+    toast('All artists already have cached images');
+    if (btn) { btn.disabled = false; btn.textContent = '↺ Backfill Images'; }
+    return;
+  }
+
+  toast(`Fetching images for ${missing.length} artists…`);
+
+  for (let i = 0; i < missing.length; i++) {
+    const a = missing[i];
+    if (btn) btn.textContent = `↺ ${i+1}/${missing.length}…`;
+    try {
+      const data = await spotifyFetch('/artists/' + a.spotify_id);
+      const imageUrl = data?.images?.[1]?.url || data?.images?.[0]?.url;
+      if (imageUrl) {
+        const rowIdx = artists.findIndex(r => r.spotify_id === a.spotify_id);
+        await sheetsWrite('update_artist_image', { row: rowIdx, image_url: imageUrl });
+        updated++;
+      } else {
+        skipped++;
+      }
+    } catch { failed++; }
+    // Small delay to avoid rate limits
+    await sleep(250);
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '↺ Backfill Images'; }
+  toast(`✓ Updated ${updated} · ${skipped} no image · ${failed} failed`);
+  await loadAdminArtists();
+}
 
 async function backfillGenres() {
   const btn = document.querySelector('[onclick="backfillGenres()"]');
