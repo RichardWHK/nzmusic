@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Discover New Zealand artists, tracks, and playlists — filtered by genre, curated with aroha.">
 <title>Aotearoa Music Explorer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Karla:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
@@ -18,7 +19,7 @@
   --bg3:          #ebebeb;
   --ink:          #0a0a0a;
   --ink2:         #3a3a3a;
-  --ink3:         #888888;
+  --ink3:         #666666;
   --border:       rgba(0,0,0,0.10);
   --border-strong:rgba(0,0,0,0.22);
   --accent:       #0a0a0a;
@@ -41,7 +42,7 @@
   --bg3:          #1e1e1e;
   --ink:          #f5f5f0;
   --ink2:         #c8c8c0;
-  --ink3:         #666660;
+  --ink3:         #999993;
   --border:       rgba(255,255,255,0.09);
   --border-strong:rgba(255,255,255,0.20);
   --accent:       #f5f5f0;
@@ -102,12 +103,16 @@ nav {
   background: none; border: none; cursor: pointer;
   font-family: var(--font-body); font-size: 13px; font-weight: 500;
   text-transform: uppercase; letter-spacing: 1.5px;
-  color: var(--ink3); padding: 6px 12px; border-radius: var(--radius);
+  color: var(--ink2); padding: 6px 12px; border-radius: var(--radius);
   transition: color var(--transition), background var(--transition);
   text-decoration: none; display: inline-block;
 }
 .nav-link:hover { color: var(--ink); background: var(--bg2); }
-.nav-link.active { color: var(--ink); }
+.nav-link.active {
+  color: var(--ink);
+  background: var(--bg2);
+  box-shadow: inset 0 -2px 0 var(--ink);
+}
 .nav-theme {
   background: none; border: 1.5px solid var(--border-strong);
   width: 36px; height: 36px; border-radius: 50%;
@@ -855,7 +860,7 @@ footer a { color: var(--ink3); }
         <span class="section-sub" id="artists-count"></span>
       </div>
       <div class="search-wrap">
-        <input class="search-input" id="artist-search" type="search" placeholder="Search artists by name or genre…" oninput="filterArtists()">
+        <input class="search-input" id="artist-search" type="search" placeholder="Search artists by name or genre…" oninput="filterArtists()" aria-label="Search artists">
         <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </div>
       <div class="genre-row" id="artists-genre-pills"></div>
@@ -896,7 +901,7 @@ footer a { color: var(--ink3); }
       <div class="tab-panel active" id="submit-tab-artist">
         <form id="artist-submit-form" onsubmit="submitArtist(event)">
           <div class="form-group">
-            <label class="form-label">Search for the Spotify Artist *</label>
+            <label class="form-label" for="submit-artist-search">Search for the Spotify Artist *</label>
             <div class="autocomplete-wrap">
               <input class="form-input" id="submit-artist-search" type="text" placeholder="Start typing artist name…" oninput="artistAutocomplete(this.value)" autocomplete="off" required>
               <div class="autocomplete-list" id="artist-autocomplete" style="display:none"></div>
@@ -914,16 +919,16 @@ footer a { color: var(--ink3); }
           </div>
           <div class="form-row mt-2">
             <div class="form-group">
-              <label class="form-label">Your name (optional)</label>
+              <label class="form-label" for="submit-a-yourname">Your name (optional)</label>
               <input class="form-input" id="submit-a-yourname" type="text" placeholder="Anonymous if blank">
             </div>
             <div class="form-group">
-              <label class="form-label">Your email (optional)</label>
+              <label class="form-label" for="submit-a-email">Your email (optional)</label>
               <input class="form-input" id="submit-a-email" type="email" placeholder="For follow-up only">
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Why should they be included?</label>
+            <label class="form-label" for="submit-a-note">Why should they be included?</label>
             <textarea class="form-textarea" id="submit-a-note" placeholder="A sentence or two is fine…"></textarea>
           </div>
           <div id="submit-artist-error" class="error-msg" style="display:none"></div>
@@ -935,7 +940,7 @@ footer a { color: var(--ink3); }
       <div class="tab-panel" id="submit-tab-playlist">
         <form id="playlist-submit-form" onsubmit="submitPlaylist(event)">
           <div class="form-group">
-            <label class="form-label">Spotify Playlist URL or ID *</label>
+            <label class="form-label" for="submit-playlist-url">Spotify Playlist URL or ID *</label>
             <input class="form-input" id="submit-playlist-url" type="text" placeholder="https://open.spotify.com/playlist/…" required oninput="previewPlaylist(this.value)">
             <p class="form-hint">Must be a public Spotify playlist featuring NZ artists.</p>
           </div>
@@ -945,31 +950,31 @@ footer a { color: var(--ink3); }
           </div>
           <div class="form-row mt-2">
             <div class="form-group">
-              <label class="form-label">Playlist display name *</label>
+              <label class="form-label" for="submit-pl-desc">Playlist display name *</label>
               <input class="form-input" id="submit-pl-desc" type="text" placeholder="e.g. Best of NZ Indie 2024" required>
             </div>
             <div class="form-group">
-              <label class="form-label">Genre(s) — select all that apply</label>
-              <div id="submit-pl-genre-pills"></div>
+              <label class="form-label" for="submit-pl-genre-pills">Genre(s) — select all that apply</label>
+              <div id="submit-pl-genre-pills" role="group" aria-label="Genre selection"></div>
               <input type="hidden" id="submit-pl-genre">
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Describe the playlist</label>
+            <label class="form-label" for="submit-pl-about">Describe the playlist</label>
             <textarea class="form-textarea" id="submit-pl-about" placeholder="What's the vibe? What kinds of NZ artists or sounds does it feature?"></textarea>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Your name (optional)</label>
+              <label class="form-label" for="submit-pl-yourname">Your name (optional)</label>
               <input class="form-input" id="submit-pl-yourname" type="text" placeholder="Anonymous if blank">
             </div>
             <div class="form-group">
-              <label class="form-label">Your email (optional)</label>
+              <label class="form-label" for="submit-pl-email">Your email (optional)</label>
               <input class="form-input" id="submit-pl-email" type="email">
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Your website or social link (optional)</label>
+            <label class="form-label" for="submit-pl-social">Your website or social link (optional)</label>
             <input class="form-input" id="submit-pl-social" type="url" placeholder="https://instagram.com/yourhandle or your website">
             <p class="form-hint">We'll use this to credit you as the curator — e.g. "Submitted by Your Name"</p>
           </div>
@@ -1028,7 +1033,7 @@ footer a { color: var(--ink3); }
       <p class="admin-login-sub">Aotearoa Music Explorer</p>
       <div id="admin-login-error" class="error-msg" style="display:none"></div>
       <div class="form-group">
-        <label class="form-label">Admin Password</label>
+        <label class="form-label" for="admin-password-input">Admin Password</label>
         <input class="form-input" id="admin-password-input" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')adminLogin()">
       </div>
       <button class="btn btn-primary w-full" onclick="adminLogin()">Sign in</button>
@@ -1089,7 +1094,7 @@ footer a { color: var(--ink3); }
             </div>
           </div>
           <div class="search-wrap" style="margin-bottom:1rem">
-            <input class="search-input" id="admin-artist-search" type="search" placeholder="Search artists…" oninput="adminFilterArtists()">
+            <input class="search-input" id="admin-artist-search" type="search" placeholder="Search artists…" oninput="adminFilterArtists()" aria-label="Search artists">
             <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </div>
           <div id="admin-artists-loading" class="loading-center"><div class="loading-ring"></div></div>
@@ -1176,11 +1181,11 @@ footer a { color: var(--ink3); }
             <p style="font-size:13px;color:var(--ink2);margin-bottom:1rem">Stored as a hash in localStorage — not visible in source code after saving.</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
               <div class="form-group" style="margin:0">
-                <label class="form-label">New password</label>
+                <label class="form-label" for="cfg-admin-pw">New password</label>
                 <input class="form-input" id="cfg-admin-pw" type="password" placeholder="Enter new password">
               </div>
               <div class="form-group" style="margin:0">
-                <label class="form-label">Confirm password</label>
+                <label class="form-label" for="cfg-admin-pw-confirm">Confirm password</label>
                 <input class="form-input" id="cfg-admin-pw-confirm" type="password" placeholder="Confirm new password">
               </div>
             </div>
@@ -1367,7 +1372,7 @@ function doPost(e) {
     </div>
     <form onsubmit="adminAddArtist(event)">
       <div class="form-group">
-        <label class="form-label">Search Spotify *</label>
+        <label class="form-label" for="admin-artist-search-input">Search Spotify *</label>
         <div class="autocomplete-wrap">
           <input class="form-input" id="admin-artist-search-input" type="text" placeholder="Artist name…" oninput="adminArtistAutocomplete(this.value)" autocomplete="off">
           <div class="autocomplete-list" id="admin-artist-autocomplete" style="display:none"></div>
@@ -1379,11 +1384,11 @@ function doPost(e) {
         <div><strong id="admin-add-preview-name"></strong><div class="text-sm text-muted" id="admin-add-preview-genres"></div></div>
       </div>
       <div class="form-group">
-        <label class="form-label">Override genres (comma-separated)</label>
+        <label class="form-label" for="admin-add-genres">Override genres (comma-separated)</label>
         <input class="form-input" id="admin-add-genres" type="text" placeholder="indie, rock, nz pop">
       </div>
       <div class="form-group">
-        <label class="form-label">Region in NZ</label>
+        <label class="form-label" for="admin-add-region">Region in NZ</label>
         <input class="form-input" id="admin-add-region" type="text" placeholder="Auckland, Wellington, Dunedin…">
       </div>
       <button class="btn btn-primary w-full" type="submit">Add to Directory</button>
@@ -1400,26 +1405,26 @@ function doPost(e) {
     </div>
     <form onsubmit="adminAddPlaylist(event)">
       <div class="form-group">
-        <label class="form-label">Spotify Playlist URL or ID *</label>
+        <label class="form-label" for="admin-pl-url">Spotify Playlist URL or ID *</label>
         <input class="form-input" id="admin-pl-url" type="text" placeholder="https://open.spotify.com/playlist/…" required>
       </div>
       <div class="form-group">
-        <label class="form-label">Display name *</label>
+        <label class="form-label" for="admin-pl-name">Display name *</label>
         <input class="form-input" id="admin-pl-name" type="text" required>
       </div>
       <div class="form-group">
-        <label class="form-label">Genre(s) — select all that apply</label>
+        <label class="form-label" for="admin-pl-genres-custom">Genre(s) — select all that apply</label>
         <div id="admin-pl-genre-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
         <input type="hidden" id="admin-pl-genres">
         <p class="form-hint">Or type custom genres:</p>
         <input class="form-input" id="admin-pl-genres-custom" type="text" placeholder="e.g. jazz, soul" style="margin-top:4px">
       </div>
       <div class="form-group">
-        <label class="form-label">Curator</label>
+        <label class="form-label" for="admin-pl-curator">Curator</label>
         <input class="form-input" id="admin-pl-curator" type="text" placeholder="Curated by…">
       </div>
       <div class="form-group">
-        <label class="form-label">Curator URL (optional)</label>
+        <label class="form-label" for="admin-pl-curator-url">Curator URL (optional)</label>
         <input class="form-input" id="admin-pl-curator-url" type="url" placeholder="https://…">
         <p class="form-hint">Links the curator name on the playlist card</p>
       </div>
@@ -1441,7 +1446,7 @@ function doPost(e) {
   </div>
 </footer>
 
-<div class="mobile-nav" id="mobile-nav">
+<div class="mobile-nav" id="mobile-nav" role="navigation" aria-label="Main navigation">
   <button class="mobile-nav-item active" data-page="explorer" onclick="showPage('explorer')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
     Explore
