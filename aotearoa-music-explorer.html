@@ -129,6 +129,30 @@ nav {
   padding: 4rem 3rem 4rem 2rem;
   display: flex; flex-direction: column; justify-content: center;
   border-right: 1.5px solid var(--ink);
+  position: relative; overflow: hidden;
+}
+/* Mobile hero background — green gradient default, artist image when loaded */
+@media (max-width: 768px) {
+  .hero-left {
+    background-color: #2d8a4e;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 500' preserveAspectRatio='xMidYMid slice'%3E%3Crect width='800' height='500' fill='%232d8a4e'/%3E%3Cpath d='M0 320 C80 290 160 260 240 280 C320 300 400 340 480 320 C560 300 640 260 720 270 C760 275 780 280 800 285 L800 500 L0 500 Z' fill='%23256e40' opacity='0.8'/%3E%3Cpath d='M0 360 C60 340 140 310 220 330 C300 350 380 390 480 370 C560 355 640 320 720 330 C760 335 780 342 800 348 L800 500 L0 500 Z' fill='%231e5c35' opacity='0.9'/%3E%3Cpath d='M0 400 C100 375 180 360 280 375 C360 388 440 415 540 400 C620 388 700 365 800 372 L800 500 L0 500 Z' fill='%23174d2b' opacity='1'/%3E%3Cpath d='M0 270 C100 250 200 240 300 260 C380 276 460 300 560 285 C640 273 720 250 800 258 L800 500 L0 500 Z' fill='%23347a49' opacity='0.5'/%3E%3C/svg%3E");
+    background-size: cover; background-position: center;
+    border-right: none;
+    padding: 3rem 1.5rem 3rem;
+  }
+  .hero-left::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(10,10,10,0.35);
+    pointer-events: none; z-index: 0;
+  }
+  .hero-left.has-art::before { background: rgba(10,10,10,0.55); }
+  .hero-left > * { position: relative; z-index: 1; }
+  .hero-h1 { color: #f5f5f0 !important; -webkit-text-fill-color: #f5f5f0; }
+  .hero-sub { color: rgba(245,245,240,0.85) !important; }
+  .hero-left .btn-primary { background: #f5f5f0; color: #0a0a0a; border-color: #f5f5f0; }
+  .hero-left .btn-outline { color: #f5f5f0; border-color: rgba(245,245,240,0.5); }
+  .hero-left .btn-outline:hover { background: rgba(245,245,240,0.12); }
 }
 .hero-eyebrow {
   font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
@@ -650,9 +674,15 @@ footer a { color: var(--ink3); }
 <!-- ═══════════════ NAV ═══════════════ -->
 <nav id="main-nav">
   <a class="nav-brand" href="#" onclick="showPage('explorer'); return false;">
-    <svg class="nav-logo" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M18 18 C18 18 20 15.5 22 15 C25 14.2 27.5 16.5 27 19.5 C26.3 23.5 22 26 18 25.5 C12.5 24.8 9 20 9.5 14.5 C10.2 7.5 16.5 3.5 23 4.5 C31 5.8 35 13 33.5 21 C31.8 30.5 23 35.5 13.5 33.5 C3 31.2 -1.5 21.5 1 11 C3.8 -1 15 -5 26 -1.5"
-        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+    <svg class="nav-logo" viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3,1 C4,-3 8,-6 12,-5 C17,-4 19,1 17,8 C14,16 6,21 -2,19 C-13,16 -19,5 -15,-7 C-10,-20 1,-27 14,-24 C29,-20 37,-7 32,9 C26,27 11,36 -5,32 C-23,27 -33,10 -27,-8 C-20,-29 -4,-40 14,-36 C35,-31 47,-12 40,9 C32,33 13,46 -9,41 C-33,35 -48,14 -41,-11 C-33,-38 -11,-54 16,-49 C46,-43 63,-18 55,12 C46,44 21,63 -10,57 C-44,50 -65,22 -57,-13 C-48,-51 -19,-72 17,-66 C57,-59 80,-27 71,13"
+        fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"/>
+      <path d="M3,1 C4,-3 8,-6 12,-5 C17,-4 19,1 17,8 C14,16 6,21 -2,19 C-13,16 -19,5 -15,-7 C-10,-20 1,-27 14,-24 C29,-20 37,-7 32,9 C26,27 11,36 -5,32 C-23,27 -33,10 -27,-8 C-20,-29 -4,-40 14,-36 C35,-31 47,-12 40,9 C32,33 13,46 -9,41 C-33,35 -48,14 -41,-11 C-33,-38 -11,-54 16,-49 C46,-43 63,-18 55,12 C46,44 21,63 -10,57 C-44,50 -65,22 -57,-13 C-48,-51 -19,-72 17,-66 C57,-59 80,-27 71,13"
+        fill="none" stroke="var(--bg)" stroke-width="11" stroke-linecap="round"/>
+      <path d="M1,3 C3,-2 7,-5 11,-4 C15,-3 18,3 16,9 C13,17 5,22 -3,20 C-14,17 -20,6 -16,-6 C-11,-19 0,-26 13,-23 C28,-19 36,-6 31,10"
+        fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"/>
+      <path d="M1,3 C3,-2 7,-5 11,-4 C15,-3 18,3 16,9 C13,17 5,22 -3,20 C-14,17 -20,6 -16,-6 C-11,-19 0,-26 13,-23 C28,-19 36,-6 31,10"
+        fill="none" stroke="var(--bg)" stroke-width="11" stroke-linecap="round"/>
     </svg>
     <div class="nav-title">
       Aotearoa Music Explorer
@@ -741,10 +771,10 @@ footer a { color: var(--ink3); }
   </div>
 
   <!-- ── GENRE MIX BUILDER ── -->
-  <div class="section" id="mix-builder-section" style="scroll-margin-top:70px">
+  <div class="section" id="mix-builder-section" style="scroll-margin-top:70px;padding-top:2rem">
     <div class="container">
 
-      <div class="section-header">
+      <div class="section-header" style="flex-direction:column;align-items:flex-start;gap:4px">
         <h2 class="section-title">Make a Mix</h2>
         <span class="section-sub">Pick genres, get a personalised NZ mix</span>
       </div>
@@ -810,7 +840,7 @@ footer a { color: var(--ink3); }
         <h2 class="section-title">NZ Playlists</h2>
         <button class="btn btn-outline btn-sm" onclick="showPage('playlists')">See all</button>
       </div>
-      <div id="featured-playlists" class="grid-2"></div>
+      <div id="featured-playlists" class="grid-3"></div>
     </div>
   </div>
 
@@ -843,7 +873,7 @@ footer a { color: var(--ink3); }
         <span class="section-sub" id="playlists-count"></span>
       </div>
       <div class="genre-row" id="playlists-genre-pills"></div>
-      <div id="playlists-grid" class="grid-2"></div>
+      <div id="playlists-grid" class="grid-3"></div>
     </div>
   </div>
 </div>
@@ -983,17 +1013,15 @@ footer a { color: var(--ink3); }
   <div id="admin-login-gate" class="admin-login">
     <div class="admin-login-card">
       <div class="admin-login-logo">
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <path d="
-            M24,24 C24.3,23.5 25,23 25.8,23 C27.2,23 28.2,24.2 27.9,25.6
-            C27.5,27.5 25.6,28.8 23.6,28.5 C21,28.1 19.4,25.6 20,23
-            C20.7,20 23.6,18.2 26.6,19 C30.2,20 32.2,23.6 31.2,27.2
-            C30.1,31.4 26,33.7 21.8,32.5 C17,31.1 14.4,26.2 16,21.4
-            C17.8,16 23.4,13.1 28.8,15
-            C35,17.1 38.1,23.5 35.9,29.7
-            C33.5,36.7 26.4,40 19.4,37.5
-            C11.6,34.7 8.1,26.8 11,19
-          " stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+        <svg width="48" height="48" viewBox="-100 -100 200 200" fill="none">
+          <path d="M3,1 C4,-3 8,-6 12,-5 C17,-4 19,1 17,8 C14,16 6,21 -2,19 C-13,16 -19,5 -15,-7 C-10,-20 1,-27 14,-24 C29,-20 37,-7 32,9 C26,27 11,36 -5,32 C-23,27 -33,10 -27,-8 C-20,-29 -4,-40 14,-36 C35,-31 47,-12 40,9 C32,33 13,46 -9,41 C-33,35 -48,14 -41,-11 C-33,-38 -11,-54 16,-49 C46,-43 63,-18 55,12 C46,44 21,63 -10,57 C-44,50 -65,22 -57,-13 C-48,-51 -19,-72 17,-66 C57,-59 80,-27 71,13"
+            stroke="currentColor" stroke-width="18" stroke-linecap="round"/>
+          <path d="M3,1 C4,-3 8,-6 12,-5 C17,-4 19,1 17,8 C14,16 6,21 -2,19 C-13,16 -19,5 -15,-7 C-10,-20 1,-27 14,-24 C29,-20 37,-7 32,9 C26,27 11,36 -5,32 C-23,27 -33,10 -27,-8 C-20,-29 -4,-40 14,-36 C35,-31 47,-12 40,9 C32,33 13,46 -9,41 C-33,35 -48,14 -41,-11 C-33,-38 -11,-54 16,-49 C46,-43 63,-18 55,12 C46,44 21,63 -10,57 C-44,50 -65,22 -57,-13 C-48,-51 -19,-72 17,-66 C57,-59 80,-27 71,13"
+            stroke="var(--bg)" stroke-width="11" stroke-linecap="round"/>
+          <path d="M1,3 C3,-2 7,-5 11,-4 C15,-3 18,3 16,9 C13,17 5,22 -3,20 C-14,17 -20,6 -16,-6 C-11,-19 0,-26 13,-23 C28,-19 36,-6 31,10"
+            stroke="currentColor" stroke-width="18" stroke-linecap="round"/>
+          <path d="M1,3 C3,-2 7,-5 11,-4 C15,-3 18,3 16,9 C13,17 5,22 -3,20 C-14,17 -20,6 -16,-6 C-11,-19 0,-26 13,-23 C28,-19 36,-6 31,10"
+            stroke="var(--bg)" stroke-width="11" stroke-linecap="round"/>
         </svg>
       </div>
       <h2 class="admin-login-title">Admin Area</h2>
@@ -1997,6 +2025,7 @@ async function startHeroCycle() {
 
 async function setHeroArt() {
   const el = document.getElementById('hero-right');
+  const heroLeft = document.querySelector('.hero-left');
   const credit = document.getElementById('hero-credit');
   if (!el) return;
   const pool = allArtists.filter(a => a.spotify_id);
@@ -2006,11 +2035,16 @@ async function setHeroArt() {
     const data = await spotifyFetch('/artists/' + artist.spotify_id);
     const img = data?.images?.[0]?.url;
     if (!img) return;
-    // Preload then swap — no whole-panel fade, just image crossfade via ::before scrim
     const preload = new Image();
     preload.onload = () => {
+      // Desktop — hero-right
       el.style.backgroundImage = 'url(' + img + ')';
-      el.classList.add('has-art'); // fades canvas out, scrim in
+      el.classList.add('has-art');
+      // Mobile — hero-left
+      if (heroLeft && window.innerWidth <= 768) {
+        heroLeft.style.backgroundImage = 'url(' + img + ')';
+        heroLeft.classList.add('has-art');
+      }
       if (credit) credit.textContent = artist.name;
     };
     preload.src = img;
@@ -2049,17 +2083,33 @@ function filterByGenre(artists, genre) {
 }
 
 function buildGenrePills() {
-  const genres = getAllGenres();
-  buildMixGenrePills(); // explorer page mix builder
-  buildPillsInto('artists-genre-pills', genres, artistsActiveGenre, g => { artistsActiveGenre = g; renderArtistsPage(); });
-  buildPillsInto('playlists-genre-pills', ['All', ...new Set(allPlaylists.flatMap(p => (p.genres||'').split(',').map(g => g.trim().charAt(0).toUpperCase() + g.trim().slice(1))))].filter(Boolean), playlistsActiveGenre, g => { playlistsActiveGenre = g; renderPlaylistsPage(); });
+  // Count genre frequency across artists
+  const freq = {};
+  allArtists.forEach(a => {
+    parseGenres(a.genres).forEach(g => { freq[g] = (freq[g] || 0) + 1; });
+  });
+
+  // Sort by frequency descending, then alphabetically
+  const allGenres = getAllGenres(); // already alphabetical, includes 'All'
+  const sortedByFreq = ['All', ...allGenres.filter(g => g !== 'All').sort((a, b) => (freq[b] || 0) - (freq[a] || 0))];
+
+  buildMixGenrePills();
+  // Artists page — top 8 by frequency, rest hidden behind "show more"
+  buildPillsInto('artists-genre-pills', sortedByFreq, artistsActiveGenre, g => { artistsActiveGenre = g; renderArtistsPage(); }, 8);
+  // Playlists page — top 8 too
+  const plGenres = ['All', ...new Set(allPlaylists.flatMap(p => (p.genres||'').split(',').map(g => capitalise(g.trim())).filter(Boolean)))].sort();
+  buildPillsInto('playlists-genre-pills', plGenres, playlistsActiveGenre, g => { playlistsActiveGenre = g; renderPlaylistsPage(); }, 8);
 }
 
-function buildPillsInto(containerId, genres, active, onClick) {
+function buildPillsInto(containerId, genres, active, onClick, topN = 0) {
   const el = document.getElementById(containerId);
   if (!el) return;
   el.innerHTML = '';
-  genres.forEach(g => {
+
+  const showAll = topN === 0 || genres.length <= topN + 1;
+  const visibleGenres = showAll ? genres : genres.slice(0, topN);
+
+  visibleGenres.forEach(g => {
     const btn = document.createElement('button');
     btn.className = 'genre-pill' + (g === active ? ' active' : '') + (g === 'All' ? ' genre-pill-all' : '');
     btn.textContent = g;
@@ -2070,6 +2120,23 @@ function buildPillsInto(containerId, genres, active, onClick) {
     };
     el.appendChild(btn);
   });
+
+  // Show all toggle
+  if (!showAll) {
+    const remaining = genres.length - topN;
+    const toggle = document.createElement('button');
+    toggle.className = 'genre-pill genre-pill-all';
+    toggle.textContent = '+ ' + remaining + ' more';
+    toggle.style.cssText = 'border-style:dashed;color:var(--ink3)';
+    toggle.onclick = () => {
+      buildPillsInto(containerId, genres, active, onClick, 0);
+      // Re-mark active
+      el.querySelectorAll('.genre-pill').forEach(p => {
+        if (p.textContent === active) p.classList.add('active');
+      });
+    };
+    el.appendChild(toggle);
+  }
 }
 
 function populateGenreSelects() {
@@ -2339,20 +2406,89 @@ function renderFeaturedPlaylists() {
 function buildPlaylistCard(p) {
   const card = document.createElement('div');
   card.className = 'card';
+  card.style.cursor = 'pointer';
+  card.onclick = () => openPlaylistModal(p);
+
   const plId = extractSpotifyId(p.spotify_id || '', 'playlist');
   const genreTags = parseGenres(p.genres).map(g =>
     `<span class="card-genre-tag">${escHtml(g)}</span>`
   ).join('');
+
+  // Placeholder — image loaded lazily via observer
+  const imgId = 'pl-' + (plId || Math.random().toString(36).slice(2));
   card.innerHTML = `
+    <div class="card-img-placeholder" id="${imgId}" data-playlist-id="${escHtml(plId)}">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    </div>
     <div class="card-body">
       <div class="card-name">${escHtml(p.name)}</div>
-      ${genreTags ? `<div class="card-genres" style="margin:6px 0">${genreTags}</div>` : ''}
-      <div class="card-meta" style="margin-bottom:6px">${escHtml(p.description || '')}</div>
-      ${p.curator ? `<div class="text-sm text-muted">Curated by ${p.curator_url ? `<a href="${escHtml(p.curator_url)}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline">${escHtml(p.curator)}</a>` : escHtml(p.curator)}</div>` : ''}
-      ${plId ? `<div class="embed-wrap mt-2"><iframe src="https://open.spotify.com/embed/playlist/${plId}?utm_source=generator" width="100%" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>` : ''}
+      ${genreTags ? `<div class="card-genres" style="margin:4px 0">${genreTags}</div>` : ''}
+      ${p.curator ? `<div class="card-meta">${p.curator_url ? `<a href="${escHtml(p.curator_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--ink3)">${escHtml(p.curator)}</a>` : escHtml(p.curator)}</div>` : ''}
+    </div>
+    <div class="card-footer">
+      <a class="card-spotify-link" href="https://open.spotify.com/playlist/${plId}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+        Spotify
+      </a>
     </div>`;
+
+  // Lazy load playlist cover via IntersectionObserver
+  if (plId) {
+    const placeholder = card.querySelector('.card-img-placeholder');
+    if (placeholder) playlistImageObserver.observe(placeholder);
+  }
   return card;
 }
+
+async function openPlaylistModal(p) {
+  const plId = extractSpotifyId(p.spotify_id || '', 'playlist');
+  document.getElementById('artist-modal-name').textContent = p.name;
+  const body = document.getElementById('artist-modal-body');
+  const genreTags = parseGenres(p.genres).map(g => `<span class="card-genre-tag">${escHtml(g)}</span>`).join('');
+  const curatorHtml = p.curator
+    ? `<div class="text-sm text-muted" style="margin-bottom:0.75rem">Curated by ${p.curator_url ? `<a href="${escHtml(p.curator_url)}" target="_blank" rel="noopener" style="color:var(--ink)">${escHtml(p.curator)}</a>` : escHtml(p.curator)}</div>`
+    : '';
+  const descHtml = p.description ? `<p style="color:var(--ink2);font-size:14px;margin-bottom:1rem;line-height:1.7">${escHtml(p.description)}</p>` : '';
+  body.innerHTML = `
+    ${genreTags ? `<div class="card-genres" style="margin-bottom:0.75rem">${genreTags}</div>` : ''}
+    ${curatorHtml}
+    ${descHtml}
+    ${plId ? `<iframe src="https://open.spotify.com/embed/playlist/${plId}?utm_source=generator"
+      width="100%" height="380"
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+      loading="lazy" style="border:none;border-radius:var(--radius);display:block"></iframe>
+    <a class="card-spotify-link" href="https://open.spotify.com/playlist/${plId}" target="_blank" rel="noopener"
+      style="margin-top:10px;display:inline-flex;font-size:12px">Open full playlist on Spotify →</a>` : ''}`;
+  openModal('artist-modal');
+}
+
+// Playlist image lazy loader
+const playlistImageObserver = new IntersectionObserver((entries) => {
+  entries.forEach(async entry => {
+    if (!entry.isIntersecting) return;
+    const placeholder = entry.target;
+    const plId = placeholder.dataset.playlistId;
+    if (!plId) return;
+    playlistImageObserver.unobserve(placeholder);
+    try {
+      const token = await getSpotifyToken();
+      if (!token) return;
+      const resp = await fetch(`https://api.spotify.com/v1/playlists/${plId}?fields=images`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const imgUrl = data.images?.[0]?.url;
+      if (!imgUrl || !placeholder.parentNode) return;
+      const img = document.createElement('img');
+      img.className = 'card-img';
+      img.src = imgUrl;
+      img.alt = 'Playlist cover';
+      img.loading = 'lazy';
+      placeholder.replaceWith(img);
+    } catch {}
+  });
+}, { rootMargin: '200px' });
 
 // ════════════════════════════════════════
 //  ARTISTS PAGE
@@ -2414,9 +2550,19 @@ async function openArtistModal(a) {
 // ════════════════════════════════════════
 //  KAUPAPA PAGE — stored in localStorage
 // ════════════════════════════════════════
-const KAUPAPA_DEFAULT = `<h2>Kaupapa</h2>
-<p>Kaupapa is a Te Reo Māori word that roughly translates to policy, topic, foundation, plan, or purpose. It acts as a guiding principle or framework for action, embodying a set of values and collective goals.</p>
-<p>Add your content here via Admin → Kaupapa Page.</p>`;
+const KAUPAPA_DEFAULT = `<p style="margin-bottom:1.2rem">Kia ora, This is the Aotearoa Music Explorer — a tool to help you, well... Explore New Zealand music. It's a directory of curated and created playlists from our team and people keen to share their favourite NZ playlists. We know Spotify isn't the greatest option for supporting artists (apparently, no idea though). This platform is built to help people explore music. If you find a new band, you can always look them up yourselves on the world wide internet, dammit web. So explore and if you find an artist you love, support them!</p>
+<p style="margin-bottom:1.2rem">This was built with love by robots, not everything is accurate (my input included...). If you see anything you think could be improved or corrected — let us know.</p>
+<p style="margin-bottom:2rem">Enjoy<br>Elskitcho.</p>
+<h2 style="font-family:var(--font-display);font-size:2rem;letter-spacing:1px;margin-bottom:1rem">Shout outs ❤️</h2>
+<ul style="list-style:none;padding:0;line-height:2">
+  <li>All of the artists featured in this directory, thanks.</li>
+  <li>Whakatāne Music Appreciation Society</li>
+  <li>RNZ / Music 101</li>
+  <li>NZ Music Month</li>
+  <li>The TAHI team — RIP heh.</li>
+  <li>Spotify</li>
+  <li>Claude 🤖</li>
+</ul>`;
 
 function loadKaupapa() {
   const loading = document.getElementById('kaupapa-loading');
