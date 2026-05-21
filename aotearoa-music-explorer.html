@@ -1116,7 +1116,10 @@ footer a { color: var(--ink3); }
         <div class="admin-section" id="asec-playlists">
           <div class="section-header">
             <h2 class="section-title">Playlists</h2>
-            <button class="btn btn-primary btn-sm" onclick="openAddPlaylistModal()">+ Add Playlist</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="backfillPlaylistImages()">↺ Backfill Images</button>
+              <button class="btn btn-primary btn-sm" onclick="openAddPlaylistModal()">+ Add Playlist</button>
+            </div>
           </div>
           <div id="admin-playlists-loading" class="loading-center"><div class="loading-ring"></div></div>
           <table class="admin-table" id="admin-playlists-table" style="display:none">
@@ -1324,6 +1327,11 @@ function doPost(e) {
         data.curator || '', data.description || '', data.status,
         data.curator_url || ''
       ]);
+
+    } else if (data.action === 'update_playlist_image') {
+      const sheet = ss.getSheetByName('playlists');
+      // playlists columns: name(1), spotify_id(2), genres(3), curator(4), description(5), status(6), curator_url(7), image_url(8)
+      sheet.getRange(data.row + 2, 8).setValue(data.image_url);
 
     } else if (data.action === 'update_artist_image') {
       const sheet = ss.getSheetByName('artists');
@@ -2033,10 +2041,13 @@ document.addEventListener('DOMContentLoaded', function initWave() {
 let heroCycleTimer = null;
 
 async function startHeroCycle() {
-  // Don't attempt without a valid token
-  const token = localStorage.getItem('sp_access_token');
-  const expiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
-  if (!token || Date.now() > expiry) return;
+  const hasCachedImages = allArtists.some(a => a.image_url && a.image_url.trim());
+  if (!hasCachedImages) {
+    // No cached images — need a token to fetch from Spotify
+    const token = localStorage.getItem('sp_access_token');
+    const expiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
+    if (!token || Date.now() > expiry) return;
+  }
   clearInterval(heroCycleTimer);
   setHeroArt();
   heroCycleTimer = setInterval(setHeroArt, 9000);
@@ -2047,19 +2058,21 @@ async function setHeroArt() {
   const heroLeft = document.querySelector('.hero-left');
   const credit = document.getElementById('hero-credit');
   if (!el) return;
-  const pool = allArtists.filter(a => a.spotify_id);
+
+  // Prefer artists with cached images — zero API calls
+  const cachedPool = allArtists.filter(a => a.image_url && a.image_url.trim());
+  const pool = cachedPool.length ? cachedPool : allArtists.filter(a => a.spotify_id);
   if (!pool.length) return;
+
   const artist = pool[Math.floor(Math.random() * pool.length)];
-  try {
-    const data = await spotifyFetch('/artists/' + artist.spotify_id);
-    const img = data?.images?.[0]?.url;
-    if (!img) return;
+
+  // Use cached URL if available, otherwise fetch from Spotify
+  if (artist.image_url) {
+    const img = artist.image_url;
     const preload = new Image();
     preload.onload = () => {
-      // Desktop — hero-right
       el.style.backgroundImage = 'url(' + img + ')';
       el.classList.add('has-art');
-      // Mobile — hero-left
       if (heroLeft && window.innerWidth <= 768) {
         heroLeft.style.backgroundImage = 'url(' + img + ')';
         heroLeft.classList.add('has-art');
@@ -2067,7 +2080,24 @@ async function setHeroArt() {
       if (credit) credit.textContent = artist.name;
     };
     preload.src = img;
-  } catch { /* skip */ }
+  } else {
+    try {
+      const data = await spotifyFetch('/artists/' + artist.spotify_id);
+      const img = data?.images?.[0]?.url;
+      if (!img) return;
+      const preload = new Image();
+      preload.onload = () => {
+        el.style.backgroundImage = 'url(' + img + ')';
+        el.classList.add('has-art');
+        if (heroLeft && window.innerWidth <= 768) {
+          heroLeft.style.backgroundImage = 'url(' + img + ')';
+          heroLeft.classList.add('has-art');
+        }
+        if (credit) credit.textContent = artist.name;
+      };
+      preload.src = img;
+    } catch { /* skip */ }
+  }
 }
 
 // ════════════════════════════════════════
@@ -2434,16 +2464,19 @@ function buildPlaylistCard(p) {
   card.onclick = () => openPlaylistModal(p);
 
   const plId = extractSpotifyId(p.spotify_id || '', 'playlist');
+  const imgId = 'pl-' + (plId || Math.random().toString(36).slice(2));
   const genreTags = parseGenres(p.genres).map(g =>
     `<span class="card-genre-tag">${escHtml(g)}</span>`
   ).join('');
 
-  // Placeholder — image loaded lazily via observer
-  const imgId = 'pl-' + (plId || Math.random().toString(36).slice(2));
+  const imgHtml = p.image_url
+    ? `<img class="card-img" src="${escHtml(p.image_url)}" alt="${escHtml(p.name)}" loading="lazy">`
+    : `<div class="card-img-placeholder" id="${imgId}" data-playlist-id="${escHtml(plId)}">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+       </div>`;
+
   card.innerHTML = `
-    <div class="card-img-placeholder" id="${imgId}" data-playlist-id="${escHtml(plId)}">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-    </div>
+    ${imgHtml}
     <div class="card-body">
       <div class="card-name">${escHtml(p.name)}</div>
       ${genreTags ? `<div class="card-genres" style="margin:4px 0">${genreTags}</div>` : ''}
@@ -2456,8 +2489,8 @@ function buildPlaylistCard(p) {
       </a>
     </div>`;
 
-  // Lazy load playlist cover via IntersectionObserver
-  if (plId) {
+  // Only use observer if no cached image
+  if (!p.image_url && plId) {
     const placeholder = card.querySelector('.card-img-placeholder');
     if (placeholder) playlistImageObserver.observe(placeholder);
   }
@@ -2574,7 +2607,7 @@ async function openArtistModal(a) {
 // ════════════════════════════════════════
 //  KAUPAPA PAGE — stored in localStorage
 // ════════════════════════════════════════
-const KAUPAPA_DEFAULT = `<p style="margin-bottom:1.2rem">Kia ora, This is the Aotearoa Music Explorer — a tool to help you, well... Explore New Zealand music. It's a directory of curated and created playlists from our team and people keen to share their favourite NZ playlists. We know Spotify isn't the greatest option for supporting artists (apparently, no idea though). We have future plans to include other services and features. This platform is built to help people explore music. If you find a new band, you can always look them up yourselves on the world wide internet, dammit web. So explore and if you find an artist you love, support them!</p>
+const KAUPAPA_DEFAULT = `<p style="margin-bottom:1.2rem">Kia ora, This is the Aotearoa Music Explorer — a tool to help you, well... Explore New Zealand music. It's a directory of curated and created playlists from our team and people keen to share their favourite NZ playlists. We know Spotify isn't the greatest option for supporting artists (apparently, no idea though). This platform is built to help people explore music. If you find a new band, you can always look them up yourselves on the world wide internet, dammit web. So explore and if you find an artist you love, support them!</p>
 <p style="margin-bottom:1.2rem">This was built with love by robots, not everything is accurate (my input included...). If you see anything you think could be improved or corrected — let us know.</p>
 <p style="margin-bottom:2rem">Enjoy<br>Elskitcho.</p>
 <h2 style="font-family:var(--font-display);font-size:2rem;letter-spacing:1px;margin-bottom:1rem">Shout outs ❤️</h2>
@@ -2583,8 +2616,7 @@ const KAUPAPA_DEFAULT = `<p style="margin-bottom:1.2rem">Kia ora, This is the Ao
   <li>Whakatāne Music Appreciation Society</li>
   <li>RNZ / Music 101</li>
   <li>NZ Music Month</li>
-  <li>Music.NZ</li>
-  <li>The TAHI team — RIP ow.</li>
+  <li>The TAHI team — RIP heh.</li>
   <li>Spotify</li>
   <li>Claude 🤖</li>
 </ul>`;
@@ -3156,6 +3188,60 @@ async function backfillImages() {
   if (btn) { btn.disabled = false; btn.textContent = '↺ Backfill Images'; }
   toast(`✓ Done — ${updated} updated · ${skipped} no image · ${failed} failed`);
   await loadAdminArtists();
+}
+
+async function backfillPlaylistImages() {
+  const btn = document.querySelector('[onclick="backfillPlaylistImages()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '↺ Fetching…'; }
+
+  let updated = 0, skipped = 0, failed = 0;
+  const playlists = await sheetsRead('playlists');
+  const missing = playlists.filter(p => {
+    const plId = extractSpotifyId(p.spotify_id || '', 'playlist');
+    return plId && (!p.image_url || !p.image_url.trim());
+  });
+
+  if (!missing.length) {
+    toast('All playlists already have cached images ✓');
+    if (btn) { btn.disabled = false; btn.textContent = '↺ Backfill Images'; }
+    return;
+  }
+
+  const DELAY_MS = 1500;
+  const estMins = Math.ceil((missing.length * DELAY_MS) / 60000);
+  toast(`Fetching images for ${missing.length} playlists — est. ${estMins} min`);
+
+  for (let i = 0; i < missing.length; i++) {
+    const p = missing[i];
+    const plId = extractSpotifyId(p.spotify_id || '', 'playlist');
+    if (btn) btn.textContent = `↺ ${i+1}/${missing.length} — ${p.name}`;
+    try {
+      const token = await getSpotifyToken();
+      const resp = await fetch(`https://api.spotify.com/v1/playlists/${plId}?fields=images`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (resp.status === 429) {
+        const wait = (parseInt(resp.headers.get('Retry-After') || '10') + 2) * 1000;
+        toast(`⚠ Rate limited — pausing ${Math.round(wait/1000)}s`);
+        await sleep(wait);
+        i--; continue;
+      }
+      if (resp.ok) {
+        const data = await resp.json();
+        const imageUrl = data?.images?.[0]?.url;
+        if (imageUrl) {
+          const rowIdx = playlists.findIndex(r => r.spotify_id === p.spotify_id);
+          await sheetsWrite('update_playlist_image', { row: rowIdx, image_url: imageUrl });
+          updated++;
+        } else { skipped++; }
+      } else { failed++; }
+    } catch { failed++; }
+    await sleep(DELAY_MS);
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '↺ Backfill Images'; }
+  toast(`✓ Done — ${updated} updated · ${skipped} no image · ${failed} failed`);
+  await loadAdminPlaylists();
 }
 
 async function backfillGenres() {
