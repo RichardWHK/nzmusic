@@ -663,8 +663,13 @@ nav {
 }
 #now-playing-close:hover { color: rgba(255,255,255,0.9); }
 #persistent-player {
-  position: fixed; bottom: -9999px; left: -9999px;
-  width: 1px; height: 1px; overflow: hidden; pointer-events: none;
+  position: fixed;
+  width: 1px; height: 1px;
+  bottom: 60px; right: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
 } */
 footer {
   border-top: 1.5px solid var(--ink); padding: 2rem;
@@ -2579,6 +2584,14 @@ function buildPlaylistCard(p) {
 
 async function openPlaylistModal(p) {
   const plId = extractSpotifyId(p.spotify_id || '', 'playlist');
+
+  // If same playlist already loaded and playing, just reopen
+  if (nowPlaying?.name === p.name && document.querySelector('#artist-modal-body iframe')) {
+    document.getElementById('artist-modal-name').textContent = p.name;
+    openModal('artist-modal');
+    return;
+  }
+
   document.getElementById('artist-modal-name').textContent = p.name;
   const body = document.getElementById('artist-modal-body');
   const genreTags = parseGenres(p.genres).map(g => `<span class="card-genre-tag">${escHtml(g)}</span>`).join('');
@@ -2717,14 +2730,16 @@ function reopenNowPlaying() {
 }
 
 async function openArtistModal(a) {
+  // If same artist is already loaded and playing, just reopen the modal
+  if (nowPlaying?.name === a.name && document.querySelector('#artist-modal-body iframe')) {
+    document.getElementById('artist-modal-name').textContent = a.name;
+    openModal('artist-modal');
+    return;
+  }
+
   document.getElementById('artist-modal-name').textContent = a.name;
   const body = document.getElementById('artist-modal-body');
   const genreTags = parseGenres(a.genres).map(g => `<span class="card-genre-tag">${escHtml(g)}</span>`).join('');
-  const extraHtml = `${genreTags ? `<div class="card-genres" style="margin-bottom:0.75rem">${genreTags}</div>` : ''}
-    <a class="card-spotify-link" href="https://open.spotify.com/artist/${a.spotify_id}"
-      target="_blank" rel="noopener" style="margin-top:10px;display:inline-flex;font-size:12px">
-      View full profile on Spotify →
-    </a>`;
   body.innerHTML = genreTags ? `<div class="card-genres" style="margin-bottom:0.75rem">${genreTags}</div>` : '';
 
   if (a.spotify_id) {
@@ -3758,20 +3773,31 @@ function openModal(id) {
   document.getElementById(id).classList.add('open');
 }
 function closeModal(id) {
-  // For artist/playlist modal — move iframe to persistent player
+  // For artist/playlist modal — hide visually but keep iframe alive for audio
   if (id === 'artist-modal') {
     const body = document.getElementById('artist-modal-body');
     const iframe = body ? body.querySelector('iframe') : null;
-    if (iframe) {
-      const persistent = document.getElementById('persistent-player');
-      persistent.innerHTML = '';
-      persistent.appendChild(iframe);
-      const name = document.getElementById('artist-modal-name')?.textContent || '';
-      if (name) showNowPlayingBar(name, nowPlaying?.type || 'artist', '');
+    const name = document.getElementById('artist-modal-name')?.textContent || '';
+    if (iframe && name) {
+      showNowPlayingBar(name, nowPlaying?.type || 'artist', '');
     }
   }
   document.getElementById(id).classList.remove('open');
   document.body.style.overflow = '';
+}
+
+function closeNowPlaying() {
+  const bar = document.getElementById('now-playing-bar');
+  bar.classList.remove('show');
+  setTimeout(() => { bar.style.display = 'none'; }, 350);
+  // Clear the modal body to stop audio
+  document.getElementById('artist-modal-body').innerHTML = '';
+  nowPlaying = null;
+}
+
+function reopenNowPlaying() {
+  if (!nowPlaying) return;
+  openModal('artist-modal');
 }
 document.querySelectorAll('.modal-overlay').forEach(o => {
   o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
