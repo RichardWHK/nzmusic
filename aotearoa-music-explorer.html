@@ -679,12 +679,21 @@ body.now-playing-active {
 } */
 footer {
   border-top: 1.5px solid var(--ink);
-  padding: 2rem;
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 12px; color: var(--ink3); flex-wrap: wrap; gap: 1rem;
+  padding: 1.5rem 2rem;
+  background: var(--bg);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  font-size: 12px; color: var(--ink3); gap: 1rem;
 }
 footer a { color: var(--ink3); }
 .footer-brand { font-family: var(--font-display); font-size: 1.1rem; color: var(--ink); letter-spacing: 1px; }
+.footer-mid { text-align: center; white-space: nowrap; }
+.footer-right { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; white-space: nowrap; }
+@media (max-width: 768px) {
+  footer { grid-template-columns: 1fr; gap: 0.75rem; }
+  .footer-mid, .footer-right { text-align: left; justify-content: flex-start; }
+}
 
 /* ── MISC ── */
 .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
@@ -1552,8 +1561,8 @@ function doPost(e) {
     <a href="https://www.skitch.co.nz" target="_blank" rel="noopener" style="display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);text-decoration:none;margin-bottom:4px;opacity:0.6;transition:opacity 0.2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">Elskitcho presents</a>
     <span class="footer-brand">Aotearoa Music Explorer</span>
   </div>
-  <div>Music data by <a href="https://spotify.com" target="_blank">Spotify</a> · Not affiliated with Spotify AB</div>
-  <div style="display:flex;align-items:center;gap:1rem">
+  <div class="footer-mid">Music data by <a href="https://spotify.com" target="_blank">Spotify</a> · Not affiliated with Spotify AB</div>
+  <div class="footer-right">
     <button class="btn btn-outline btn-sm" onclick="showPage('submit')">Submit an Artist</button>
     <button onclick="showPage('kaupapa')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--ink3);font-family:var(--font-body);letter-spacing:1px;opacity:0.6;transition:opacity 0.2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">Kaupapa</button>
     <button onclick="showPage('admin')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--ink3);font-family:var(--font-body);letter-spacing:1px;opacity:0.5;transition:opacity 0.2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'" title="Admin area">admin</button>
