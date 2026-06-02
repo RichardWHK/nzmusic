@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Dark rounded background so the spiral reads on both light and dark tab bars -->
+  <rect x="0" y="0" width="100" height="100" rx="22" fill="#0a0a0a"/>
+  <!-- Spiral, centred and scaled to fit. Cream stroke with a dark cut-out gives the double-traced inked look. -->
+  <g transform="translate(50,50) scale(0.42)">
+    <path d="M3,1 C4,-3 8,-6 12,-5 C17,-4 19,1 17,8 C14,16 6,21 -2,19 C-13,16 -19,5 -15,-7 C-10,-20 1,-27 14,-24 C29,-20 37,-7 32,9 C26,27 11,36 -5,32 C-23,27 -33,10 -27,-8 C-20,-29 -4,-40 14,-36 C35,-31 47,-12 40,9 C32,33 13,46 -9,41 C-33,35 -48,14 -41,-11 C-33,-38 -11,-54 16,-49 C46,-43 63,-18 55,12 C46,44 21,63 -10,57 C-44,50 -65,22 -57,-13 C-48,-51 -19,-72 17,-66 C57,-59 80,-27 71,13"
+      fill="none" stroke="#f5f5f0" stroke-width="18" stroke-linecap="round"/>
+    <path d="M3,1 C4,-3 8,-6 12,-5 C17,-4 19,1 17,8 C14,16 6,21 -2,19 C-13,16 -19,5 -15,-7 C-10,-20 1,-27 14,-24 C29,-20 37,-7 32,9 C26,27 11,36 -5,32 C-23,27 -33,10 -27,-8 C-20,-29 -4,-40 14,-36 C35,-31 47,-12 40,9 C32,33 13,46 -9,41 C-33,35 -48,14 -41,-11 C-33,-38 -11,-54 16,-49 C46,-43 63,-18 55,12 C46,44 21,63 -10,57 C-44,50 -65,22 -57,-13 C-48,-51 -19,-72 17,-66 C57,-59 80,-27 71,13"
+      fill="none" stroke="#0a0a0a" stroke-width="11" stroke-linecap="round"/>
+    <path d="M1,3 C3,-2 7,-5 11,-4 C15,-3 18,3 16,9 C13,17 5,22 -3,20 C-14,17 -20,6 -16,-6 C-11,-19 0,-26 13,-23 C28,-19 36,-6 31,10"
+      fill="none" stroke="#f5f5f0" stroke-width="18" stroke-linecap="round"/>
+    <path d="M1,3 C3,-2 7,-5 11,-4 C15,-3 18,3 16,9 C13,17 5,22 -3,20 C-14,17 -20,6 -16,-6 C-11,-19 0,-26 13,-23 C28,-19 36,-6 31,10"
+      fill="none" stroke="#0a0a0a" stroke-width="11" stroke-linecap="round"/>
+  </g>
+</svg>
