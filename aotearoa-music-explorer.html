@@ -581,32 +581,10 @@ nav {
 }
 .pap-back:hover { color: var(--ink); }
 .pap-results { margin-top: 0.5rem; }
-.pap-artist-list { display: flex; flex-direction: column; gap: 6px; margin: 1rem 0; }
-.pap-artist-item {
-  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
-  border: 1px solid var(--border); border-radius: var(--radius);
-  cursor: pointer; transition: all 0.15s; background: var(--bg);
-}
-.pap-artist-item:hover { border-color: var(--ink); background: var(--bg2); }
-.pap-artist-img {
-  width: 36px; height: 36px; border-radius: 4px;
-  object-fit: cover; background: var(--bg2); flex-shrink: 0;
-}
-.pap-artist-img-placeholder {
-  width: 36px; height: 36px; border-radius: 4px;
-  background: var(--bg2); flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--ink3);
-}
-.pap-artist-name { font-size: 14px; font-weight: 600; color: var(--ink); }
-.pap-artist-genres { font-size: 11px; color: var(--ink3); margin-top: 1px; }
 .pap-empty {
   padding: 1.5rem; text-align: center; color: var(--ink3);
   font-size: 14px; border: 1.5px dashed var(--border);
   border-radius: var(--radius); margin: 1rem 0;
-}
-.pap-mix-btn {
-  width: 100%; margin-top: 0.75rem;
 }
 .submit-strip {
   background: var(--bg2); border-top: 1.5px solid var(--ink);
@@ -1270,6 +1248,7 @@ footer a { color: var(--ink3); }
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn btn-outline btn-sm" onclick="backfillImages()" title="Cache artist images in sheet to reduce Spotify API calls">↺ Backfill Images</button>
               <button class="btn btn-outline btn-sm" onclick="backfillGenres()" title="Fetch genres from Spotify for any artist missing them">↺ Backfill Genres</button>
+              <button class="btn btn-outline btn-sm" onclick="backfillTracks()" title="Cache top track IDs per artist so mixes work without live Spotify calls">↺ Backfill Tracks</button>
               <button class="btn btn-primary btn-sm" onclick="openAddArtistModal()">+ Add Artist</button>
             </div>
           </div>
@@ -1381,10 +1360,16 @@ footer a { color: var(--ink3); }
             <div id="diagnostics-output" style="display:none;margin-top:1rem;background:var(--bg2);border:1px solid var(--border-strong);border-radius:var(--radius);padding:1rem;font-size:13px;font-family:monospace;white-space:pre-wrap;max-height:300px;overflow-y:auto"></div>
 
             <hr class="divider">
+            <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:0.5rem">Genre Tree Coverage</h3>
+            <p style="font-size:13px;color:var(--ink2);margin-bottom:1rem">Finds genre tags in your directory that no "Up2?" path will ever surface, and tree genres that match nothing in your data.</p>
+            <button class="btn btn-outline btn-sm" onclick="runGenreCoverage()">Check Genre Coverage</button>
+            <div id="genre-coverage-output" style="display:none;margin-top:1rem;background:var(--bg2);border:1px solid var(--border-strong);border-radius:var(--radius);padding:1rem;font-size:13px;line-height:1.7;max-height:340px;overflow-y:auto"></div>
+
+            <hr class="divider">
             <h3 style="font-family:var(--font-display);font-size:1.3rem;letter-spacing:1px;margin-bottom:1rem">Sheet Column Reference</h3>
             <div style="font-size:13px;color:var(--ink2);line-height:1.9">
-              <p><strong>artists</strong> — name, spotify_id, genres, region, bio, status, match_confidence</p>
-              <p><strong>playlists</strong> — name, spotify_id, genres, curator, description, status</p>
+              <p><strong>artists</strong> — name, spotify_id, genres, region, bio, status, match_confidence, image_url, track_ids</p>
+              <p><strong>playlists</strong> — name, spotify_id, genres, curator, description, status, curator_url, image_url</p>
               <p><strong>submissions_artists</strong> — name, spotify_id, spotify_name, note, submitter_name, submitter_email, timestamp, status</p>
               <p><strong>submissions_playlists</strong> — spotify_id, description, about, genre, submitter_name, submitter_email, submitter_social, timestamp, status</p>
             </div>
@@ -1515,6 +1500,11 @@ function doPost(e) {
       const sheet = ss.getSheetByName('artists');
       // genres is column C (index 3), row is 0-indexed data row so +2 for header
       sheet.getRange(data.row + 2, 3).setValue(data.genres);
+
+    } else if (data.action === 'update_artist_tracks') {
+      const sheet = ss.getSheetByName('artists');
+      // track_ids is column I (index 9), row is 0-indexed data row so +2 for header
+      sheet.getRange(data.row + 2, 9).setValue(data.track_ids);
 
     } else if (data.action === 'remove_artist') {
       const sheet = ss.getSheetByName('artists');
@@ -2522,12 +2512,21 @@ async function generateMix() {
 
   for (const a of shuffled) {
     if (!a.spotify_id) continue;
+
+    // Prefer cached track IDs — zero API calls
+    const cachedIds = (a.track_ids || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (cachedIds.length) {
+      const id = cachedIds[Math.floor(Math.random() * Math.min(5, cachedIds.length))];
+      trackData.push({ track: { id }, artist: a });
+      if (trackData.length >= 10) break;
+      continue;
+    }
+
+    // Fallback: live search for artists not yet cached
     document.getElementById('mix-loading-text').textContent = 'Finding tracks from ' + a.name + '…';
     try {
-      // Use artist ID in search to ensure exact artist match — name search is too fuzzy
       const data = await spotifyFetch('/search?q=artist:' + encodeURIComponent(a.name)
         + '&type=track&limit=10&market=NZ');
-      // Filter strictly: only tracks where one of the artists matches our spotify_id
       const items = data?.tracks?.items?.filter(t =>
         t?.id && t.artists?.some(ta => ta.id === a.spotify_id)
       );
@@ -2928,6 +2927,81 @@ function papRender() {
   });
 }
 
+// Score how well a comma-separated genre string matches the selected tree genres.
+// Returns { score, tagCount } so callers can apply a proportional rule.
+function papMatchInfo(tagString, genresLower) {
+  const tags = parseGenres(tagString).map(g => g.toLowerCase());
+  const score = genresLower.filter(g =>
+    tags.some(ag => ag.includes(g) || g.includes(ag))
+  ).length;
+  return { score, tagCount: tags.length };
+}
+
+// Qualifies if it matches 2+ tree genres, OR it's a sparsely-tagged artist
+// (1 tag) whose single tag matches — so perfect single-genre acts aren't hidden.
+function papQualifies({ score, tagCount }) {
+  if (score >= 2) return true;
+  if (score === 1 && tagCount === 1) return true;
+  return false;
+}
+
+// Walk the tree, collect every genre string referenced by a leaf
+function papAllTreeGenres() {
+  const out = new Set();
+  (function walk(node) {
+    (node.options || []).forEach(opt => {
+      if (opt.genres) opt.genres.forEach(g => out.add(g));
+      if (opt.options) walk(opt);
+    });
+  })(PAP_TREE);
+  return [...out];
+}
+
+function runGenreCoverage() {
+  const out = document.getElementById('genre-coverage-output');
+  out.style.display = 'block';
+
+  // Every genre tag actually present in the directory
+  const dirGenres = new Set();
+  allArtists.forEach(a => parseGenres(a.genres).forEach(g => dirGenres.add(g)));
+  allPlaylists.forEach(p => parseGenres(p.genres).forEach(g => dirGenres.add(g)));
+
+  const treeGenres = papAllTreeGenres();
+  const treeLower = treeGenres.map(g => g.toLowerCase());
+
+  // Fuzzy match helper, same logic as the matcher
+  const fuzzy = (a, b) => a.includes(b) || b.includes(a);
+
+  // Directory tags that no tree genre matches → unreachable via Up2?
+  const orphanTags = [...dirGenres].filter(tag =>
+    !treeLower.some(tg => fuzzy(tag.toLowerCase(), tg))
+  ).sort((a, b) => a.localeCompare(b));
+
+  // Tree genres that match nothing in the directory → dead branches
+  const deadTreeGenres = treeGenres.filter(tg =>
+    ![...dirGenres].some(tag => fuzzy(tag.toLowerCase(), tg.toLowerCase()))
+  ).sort((a, b) => a.localeCompare(b));
+
+  const section = (title, items, emptyMsg, color) => {
+    if (!items.length) return `<div style="margin-bottom:1rem"><strong>${title}</strong><div style="color:var(--success);font-size:12px;margin-top:2px">${emptyMsg}</div></div>`;
+    return `<div style="margin-bottom:1rem">
+      <strong>${title} <span style="color:${color}">(${items.length})</span></strong>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+        ${items.map(g => `<span class="card-genre-tag">${escHtml(g)}</span>`).join('')}
+      </div>
+    </div>`;
+  };
+
+  out.innerHTML =
+    section('Directory genres no path can reach', orphanTags,
+      '✓ Every genre tag in your directory is reachable via at least one path.', 'var(--danger)') +
+    section('Tree genres matching nothing in your data', deadTreeGenres,
+      '✓ Every genre in the tree matches at least one artist or playlist.', 'var(--ink3)') +
+    `<div style="font-size:11px;color:var(--ink3);border-top:1px solid var(--border);padding-top:8px;margin-top:4px">
+      ${dirGenres.size} unique genre tags in directory · ${treeGenres.length} genres referenced across the tree
+    </div>`;
+}
+
 function papShowResults(genres) {
   document.getElementById('pap-options').style.display = 'none';
   document.getElementById('pap-back').style.display = 'block';
@@ -2938,27 +3012,23 @@ function papShowResults(genres) {
   document.getElementById('pap-question').textContent = 'Here\'s what\'s in the crate 🎵';
   document.getElementById('pap-sub').textContent = path.join(' · ');
 
-  // Fuzzy match — require at least 2 genre tags to match
   const genresLower = genres.map(g => g.toLowerCase());
-  function matchScore(tagString) {
-    const artistGenres = parseGenres(tagString).map(g => g.toLowerCase());
-    return genresLower.filter(g =>
-      artistGenres.some(ag => ag.includes(g) || g.includes(ag))
-    ).length;
-  }
 
   const matchedArtists = allArtists
-    .map(a => ({ ...a, _score: matchScore(a.genres || '') }))
-    .filter(a => a._score >= 2)
-    .sort((a, b) => b._score - a._score);
+    .map(a => ({ artist: a, m: papMatchInfo(a.genres || '', genresLower) }))
+    .filter(x => papQualifies(x.m))
+    .sort((a, b) => b.m.score - a.m.score)
+    .map(x => x.artist);
 
   const matchedPlaylists = allPlaylists
-    .map(p => ({ ...p, _score: matchScore(p.genres || '') }))
-    .filter(p => p._score >= 2)
-    .sort((a, b) => b._score - a._score);
+    .map(p => ({ playlist: p, m: papMatchInfo(p.genres || '', genresLower) }))
+    .filter(x => papQualifies(x.m))
+    .sort((a, b) => b.m.score - a.m.score)
+    .map(x => x.playlist);
 
   const resultsEl = document.getElementById('pap-results');
   resultsEl.style.display = 'block';
+  resultsEl.innerHTML = '';
 
   if (!matchedArtists.length && !matchedPlaylists.length) {
     resultsEl.innerHTML = `
@@ -2971,94 +3041,32 @@ function papShowResults(genres) {
     return;
   }
 
-  // Artists section
-  let html = '';
+  // Artists — reuse the canonical card builder (handles escaping, lazy images, click binding)
   if (matchedArtists.length) {
-    const display = matchedArtists.slice(0, 12);
-    html += `<div style="font-size:12px;color:var(--ink3);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:1px">
-      ${matchedArtists.length} artist${matchedArtists.length === 1 ? '' : 's'} in the crate${matchedArtists.length > 12 ? ' · showing 12' : ''}
-    </div>
-    <div class="grid-3" style="margin-bottom:1.5rem">`;
-    display.forEach(a => {
-      const imgHtml = a.image_url
-        ? `<img class="card-img" src="${escHtml(a.image_url)}" alt="${escHtml(a.name)}" loading="lazy">`
-        : `<div class="card-img-placeholder"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>`;
-      const genreTags = parseGenres(a.genres).slice(0,3).map(g => `<span class="card-genre-tag">${escHtml(g)}</span>`).join('');
-      html += `<div class="card" style="cursor:pointer" onclick='openArtistModal(${JSON.stringify(a).replace(/'/g, "&#39;")})'>
-        ${imgHtml}
-        <div class="card-body">
-          <div class="card-name">${escHtml(a.name)}</div>
-          <div class="card-genres">${genreTags}</div>
-        </div>
-        <div class="card-footer">
-          <a class="card-spotify-link" href="https://open.spotify.com/artist/${a.spotify_id}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-            Spotify
-          </a>
-        </div>
-      </div>`;
-    });
-    html += `</div>`;
+    const label = document.createElement('div');
+    label.style.cssText = 'font-size:12px;color:var(--ink3);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:1px';
+    label.textContent = `${matchedArtists.length} artist${matchedArtists.length === 1 ? '' : 's'} in the crate${matchedArtists.length > 12 ? ' · showing 12' : ''}`;
+    resultsEl.appendChild(label);
+
+    const grid = document.createElement('div');
+    grid.className = 'grid-3';
+    grid.style.marginBottom = '1.5rem';
+    matchedArtists.slice(0, 12).forEach(a => grid.appendChild(buildArtistCard(a)));
+    resultsEl.appendChild(grid);
   }
 
-  // Playlists section
+  // Playlists — same deal
   if (matchedPlaylists.length) {
-    const displayPl = matchedPlaylists.slice(0, 6);
-    html += `<div style="font-size:12px;color:var(--ink3);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:1px">
-      ${matchedPlaylists.length} playlist${matchedPlaylists.length === 1 ? '' : 's'} for this vibe${matchedPlaylists.length > 6 ? ' · showing 6' : ''}
-    </div>
-    <div class="grid-3" style="margin-bottom:1.5rem">`;
-    displayPl.forEach(p => {
-      const plId = extractSpotifyId(p.spotify_id || '', 'playlist');
-      const imgHtml = p.image_url
-        ? `<img class="card-img" src="${escHtml(p.image_url)}" alt="${escHtml(p.name)}" loading="lazy">`
-        : `<div class="card-img-placeholder"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>`;
-      const genreTags = parseGenres(p.genres).slice(0,3).map(g => `<span class="card-genre-tag">${escHtml(g)}</span>`).join('');
-      html += `<div class="card" style="cursor:pointer" onclick='openPlaylistModal(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
-        ${imgHtml}
-        <div class="card-body">
-          <div class="card-name">${escHtml(p.name)}</div>
-          <div class="card-genres">${genreTags}</div>
-          ${p.curator ? `<div class="card-meta">${escHtml(p.curator)}</div>` : ''}
-        </div>
-        <div class="card-footer">
-          <a class="card-spotify-link" href="https://open.spotify.com/playlist/${plId}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-            Spotify
-          </a>
-        </div>
-      </div>`;
-    });
-    html += `</div>`;
+    const label = document.createElement('div');
+    label.style.cssText = 'font-size:12px;color:var(--ink3);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:1px';
+    label.textContent = `${matchedPlaylists.length} playlist${matchedPlaylists.length === 1 ? '' : 's'} for this vibe${matchedPlaylists.length > 6 ? ' · showing 6' : ''}`;
+    resultsEl.appendChild(label);
+
+    const grid = document.createElement('div');
+    grid.className = 'grid-3';
+    matchedPlaylists.slice(0, 6).forEach(p => grid.appendChild(buildPlaylistCard(p)));
+    resultsEl.appendChild(grid);
   }
-
-  // Mix button
-  const genresJson = JSON.stringify(genres);
-  html += `<button class="btn btn-primary pap-mix-btn" onclick="papSendToMix(${genresJson.replace(/"/g, '&quot;')})">
-    🎛️ Generate a mix from this vibe
-  </button>`;
-
-  resultsEl.innerHTML = html;
-}
-
-function papSendToMix(genres) {
-  // Clear existing selections
-  selectedMixGenres.clear();
-  document.querySelectorAll('#mix-genre-pills .genre-pill').forEach(p => p.classList.remove('active'));
-
-  // Match and select genre pills fuzzy
-  document.querySelectorAll('#mix-genre-pills .genre-pill').forEach(pill => {
-    const pillText = pill.textContent.trim().toLowerCase();
-    if (pillText === 'all') return;
-    if (genres.some(g => pillText.includes(g.toLowerCase()) || g.toLowerCase().includes(pillText))) {
-      selectedMixGenres.add(pill.textContent.trim());
-      pill.classList.add('active');
-    }
-  });
-
-  // Scroll to mix builder and generate
-  document.getElementById('mix-builder-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  setTimeout(() => generateMix(), 400);
 }
 let nowPlaying = null; // { name, type, embedHtml }
 
@@ -3213,20 +3221,31 @@ async function rollDice() {
         <div class="embed-wrap"><iframe src="https://open.spotify.com/embed/playlist/${plId}?utm_source=generator" width="100%" height="232" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>`;
 
     } else {
-      // Random track — filter by artist ID to ensure exact match
+      // Random track — prefer cached track IDs (zero API calls), else live search
       const a = allArtists[Math.floor(Math.random() * allArtists.length)];
       if (!a?.spotify_id) { rollDice(); return; }
-      const data = await spotifyFetch(`/search?q=artist:${encodeURIComponent(a.name)}&type=track&limit=10&market=NZ`);
-      const tracks = data?.tracks?.items?.filter(t =>
-        t?.id && t.artists?.some(ta => ta.id === a.spotify_id)
-      );
-      if (!tracks?.length) { rollDice(); return; }
-      const track = tracks[Math.floor(Math.random() * tracks.length)];
+
+      const cachedIds = (a.track_ids || '').split(',').map(s => s.trim()).filter(Boolean);
+      let trackId, trackName = '';
+
+      if (cachedIds.length) {
+        trackId = cachedIds[Math.floor(Math.random() * cachedIds.length)];
+      } else {
+        const data = await spotifyFetch(`/search?q=artist:${encodeURIComponent(a.name)}&type=track&limit=10&market=NZ`);
+        const tracks = data?.tracks?.items?.filter(t =>
+          t?.id && t.artists?.some(ta => ta.id === a.spotify_id)
+        );
+        if (!tracks?.length) { rollDice(); return; }
+        const track = tracks[Math.floor(Math.random() * tracks.length)];
+        trackId = track.id;
+        trackName = track.name;
+      }
+
       result.innerHTML = `
         <div class="spotlight-label">Random NZ Track · ${escHtml(a.name)}</div>
-        <div class="spotlight-name">${escHtml(track.name)}</div>
+        ${trackName ? `<div class="spotlight-name">${escHtml(trackName)}</div>` : ''}
         <div class="embed-wrap">
-          <iframe src="https://open.spotify.com/embed/track/${track.id}?utm_source=generator" width="100%" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+          <iframe src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator" width="100%" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
         </div>`;
     }
   } catch (err) {
@@ -3705,6 +3724,65 @@ async function backfillImages() {
 
   if (btn) { btn.disabled = false; btn.textContent = '↺ Backfill Images'; }
   toast(`✓ Done — ${updated} updated · ${skipped} no image · ${failed} failed`);
+  await loadAdminArtists();
+}
+
+async function backfillTracks() {
+  const btn = document.querySelector('[onclick="backfillTracks()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '↺ Fetching…'; }
+
+  let updated = 0, skipped = 0, failed = 0;
+  const artists = await sheetsRead('artists');
+  const missing = artists.filter(a => a.spotify_id && (!a.track_ids || !a.track_ids.trim()));
+
+  if (!missing.length) {
+    toast('All artists already have cached tracks ✓');
+    if (btn) { btn.disabled = false; btn.textContent = '↺ Backfill Tracks'; }
+    return;
+  }
+
+  const DELAY_MS = 1500; // 1 request / 1.5s — safely under Spotify limits
+  const estMins = Math.ceil((missing.length * DELAY_MS) / 60000);
+  toast(`Caching tracks for ${missing.length} artists — est. ${estMins} min. Leave this tab open.`);
+
+  for (let i = 0; i < missing.length; i++) {
+    const a = missing[i];
+    if (btn) btn.textContent = `↺ ${i+1}/${missing.length} — ${a.name}`;
+    try {
+      const resp = await fetch(`https://api.spotify.com/v1/artists/${a.spotify_id}/top-tracks?market=NZ`, {
+        headers: { 'Authorization': 'Bearer ' + (await getSpotifyToken()) }
+      });
+
+      if (resp.status === 429) {
+        const wait = (parseInt(resp.headers.get('Retry-After') || '10') + 2) * 1000;
+        toast(`⚠ Rate limited — pausing for ${Math.round(wait/1000)}s`);
+        if (btn) btn.textContent = `⏸ Paused — rate limited…`;
+        await sleep(wait);
+        i--; // retry same artist
+        continue;
+      }
+
+      if (resp.ok) {
+        const data = await resp.json();
+        // Keep up to 8 top tracks, store just their IDs
+        const ids = (data?.tracks || []).slice(0, 8).map(t => t.id).filter(Boolean);
+        if (ids.length) {
+          const rowIdx = artists.findIndex(r => r.spotify_id === a.spotify_id);
+          await sheetsWrite('update_artist_tracks', { row: rowIdx, track_ids: ids.join(',') });
+          updated++;
+        } else {
+          skipped++; // no top tracks returned
+        }
+      } else {
+        failed++;
+      }
+    } catch { failed++; }
+
+    await sleep(DELAY_MS);
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '↺ Backfill Tracks'; }
+  toast(`✓ Done — ${updated} cached · ${skipped} no tracks · ${failed} failed`);
   await loadAdminArtists();
 }
 
