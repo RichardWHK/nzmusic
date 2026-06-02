@@ -534,7 +534,80 @@ nav {
 }
 .dice-panel-body { padding: 1.5rem; background: var(--bg); }
 
-/* ── SUBMIT SECTION ── */
+/* ── PICK-A-PATH ── */
+.pap-panel {
+  border: 1.5px solid var(--ink); border-radius: var(--radius-lg);
+  overflow: hidden; margin-top: 2rem;
+  display: none;
+}
+.pap-panel.show { display: block; }
+.pap-header {
+  background: var(--ink); color: var(--accent-inv);
+  padding: 1rem 1.5rem; font-family: var(--font-display);
+  font-size: 1.4rem; letter-spacing: 1px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.pap-body { padding: 1.5rem; background: var(--bg); }
+.pap-question {
+  font-family: var(--font-display); font-size: 1.6rem;
+  letter-spacing: 1px; margin-bottom: 0.4rem; color: var(--ink);
+}
+.pap-sub {
+  font-size: 13px; color: var(--ink3); margin-bottom: 1.25rem;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.pap-breadcrumb {
+  font-size: 11px; color: var(--ink3); margin-bottom: 1rem;
+  letter-spacing: 1px; text-transform: uppercase; opacity: 0.7;
+  min-height: 16px;
+}
+.pap-options {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.pap-option {
+  background: none; border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 10px 16px;
+  text-align: left; cursor: pointer; font-family: var(--font-body);
+  font-size: 14px; color: var(--ink); transition: all 0.15s;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.pap-option:hover { border-color: var(--ink); background: var(--bg2); }
+.pap-option-arrow { opacity: 0.3; font-size: 12px; }
+.pap-back {
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; color: var(--ink3); padding: 0;
+  font-family: var(--font-body); letter-spacing: 1px;
+  text-transform: uppercase; margin-bottom: 1rem; display: none;
+}
+.pap-back:hover { color: var(--ink); }
+.pap-results { margin-top: 0.5rem; }
+.pap-artist-list { display: flex; flex-direction: column; gap: 6px; margin: 1rem 0; }
+.pap-artist-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; transition: all 0.15s; background: var(--bg);
+}
+.pap-artist-item:hover { border-color: var(--ink); background: var(--bg2); }
+.pap-artist-img {
+  width: 36px; height: 36px; border-radius: 4px;
+  object-fit: cover; background: var(--bg2); flex-shrink: 0;
+}
+.pap-artist-img-placeholder {
+  width: 36px; height: 36px; border-radius: 4px;
+  background: var(--bg2); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink3);
+}
+.pap-artist-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+.pap-artist-genres { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+.pap-empty {
+  padding: 1.5rem; text-align: center; color: var(--ink3);
+  font-size: 14px; border: 1.5px dashed var(--border);
+  border-radius: var(--radius); margin: 1rem 0;
+}
+.pap-mix-btn {
+  width: 100%; margin-top: 0.75rem;
+}
 .submit-strip {
   background: var(--bg2); border-top: 1.5px solid var(--ink);
   border-bottom: 1.5px solid var(--ink);
@@ -838,10 +911,14 @@ footer a { color: var(--ink3); }
             C242,63 278,124 263,182
           " stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none"/>
         </svg>
-        <div class="hero-dice">
+        <div class="hero-dice" style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="dice-btn" onclick="rollDice()" title="Random NZ discovery">
             <span class="dice-icon">⚄</span>
             <span>Roll the dice</span>
+          </button>
+          <button class="dice-btn" onclick="openPickAPath()" title="Pick-a-path music discovery" style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.25)">
+            <span class="dice-icon">🤙</span>
+            <span>Up2?</span>
           </button>
         </div>
       </div>
@@ -860,7 +937,23 @@ footer a { color: var(--ink3); }
     </div>
   </div>
 
-  <!-- ── GENRE MIX BUILDER ── -->
+  <!-- Pick-a-Path panel -->
+  <div class="pap-panel" id="pap-panel" style="scroll-margin-top:80px">
+    <div class="pap-header">
+      <span id="pap-header-title">Up2?</span>
+      <button class="btn btn-outline btn-sm" style="color:var(--accent-inv);border-color:rgba(255,255,255,0.3)" onclick="papReset()">Start over</button>
+    </div>
+    <div class="pap-body">
+      <div class="pap-breadcrumb" id="pap-breadcrumb"></div>
+      <button class="pap-back" id="pap-back" onclick="papBack()">← Back</button>
+      <div class="pap-question" id="pap-question"></div>
+      <div class="pap-sub" id="pap-sub"></div>
+      <div class="pap-options" id="pap-options"></div>
+      <div class="pap-results" id="pap-results" style="display:none"></div>
+    </div>
+  </div>
+
+
   <div class="section" id="mix-builder-section" style="scroll-margin-top:70px;padding-top:2rem">
     <div class="container">
 
@@ -2708,8 +2801,213 @@ function renderPlaylistsPage() {
 //  ARTIST MODAL
 // ════════════════════════════════════════
 // ════════════════════════════════════════
-//  NOW PLAYING
+//  PICK-A-PATH
 // ════════════════════════════════════════
+
+const PAP_TREE = {
+  question: "Up2?",
+  sub: "What's the vibe right now?",
+  options: [
+    {
+      label: "Chilling",
+      emoji: "😌",
+      question: "How chilled though?",
+      sub: "Pick your level of horizontal",
+      options: [
+        { label: "Barely conscious", emoji: "🛋️", genres: ["Ambient","Lo-Fi","Drone","Instrumental","Sleep","Meditation"] },
+        { label: "Mellow but present", emoji: "☕", genres: ["Soul","R&B","Jazz","Acoustic","Singer-Songwriter","Folk","Blues"] },
+        { label: "Late night feels", emoji: "🌙", genres: ["Trip-Hop","Neo-Soul","Downtempo","Electronic","Electronica","Synth"] }
+      ]
+    },
+    {
+      label: "Hard at work",
+      emoji: "💻",
+      question: "What's the headspace?",
+      sub: "How's the grind going?",
+      options: [
+        { label: "Deep focus, no words", emoji: "🎧", genres: ["Lo-Fi","Ambient","Instrumental","Post-Rock","Techno","Electronic","Electronica","House","Drone"] },
+        { label: "Energised and locked in", emoji: "⚡", genres: ["Indie","Alternative","Electronic","Breakbeat","Groove","Funk","Electronica"] },
+        { label: "Loud and don't care", emoji: "🤘", genres: ["Rock","Punk","Metal","Noise","Hardcore","Grunge","Alternative Rock","Indie Rock"] }
+      ]
+    },
+    {
+      label: "Having a brew",
+      emoji: "🍺",
+      question: "Who's around?",
+      sub: "Set the scene",
+      options: [
+        { label: "Just me, good vibes", emoji: "🪑", genres: ["Folk","Acoustic","Country","Americana","Singer-Songwriter","Alt-Country","Blues"] },
+        { label: "Few mates, easy arvo", emoji: "🌤️", genres: ["Indie","Pop","Reggae","Funk","Soul","R&B","Alternative"] },
+        { label: "Getting a bit livelier", emoji: "🎸", genres: ["Rock","Blues","Pub Rock","Alt-Country","Country","Indie Rock","Classic Rock"] }
+      ]
+    },
+    {
+      label: "Keen to move",
+      emoji: "🕺",
+      question: "What kind of moving?",
+      sub: "How's the body feeling?",
+      options: [
+        { label: "Dance floor", emoji: "💃", genres: ["House","Electronic","Dance","Funk","Disco","Electronica","Club"] },
+        { label: "Head nodding, body grooving", emoji: "😤", genres: ["Hip-Hop","R&B","Breakbeat","Groove","Funk","Soul","Rap"] },
+        { label: "Full send", emoji: "🔥", genres: ["Drum and Bass","Jungle","Techno","Punk","Metal","Hardcore","Noise","DnB"] }
+      ]
+    },
+    {
+      label: "Just cruising",
+      emoji: "🚗",
+      question: "Windows up or down?",
+      sub: "Pick your ride",
+      options: [
+        { label: "Windows up, own world", emoji: "🌫️", genres: ["Indie Pop","Dream Pop","Shoegaze","Art Pop","Chamber Pop","Dreamy","Bedroom Pop"] },
+        { label: "Windows down, singing along", emoji: "🎤", genres: ["Pop","Rock","Alternative","Indie","Alternative Pop","Alternative Rock"] },
+        { label: "No destination, just driving", emoji: "🌌", genres: ["Post-Rock","Psychedelic","Space Rock","Experimental","Progressive","Ambient"] }
+      ]
+    }
+  ]
+};
+
+// State
+let papHistory = [];
+let papCurrent = PAP_TREE;
+
+function openPickAPath() {
+  papHistory = [];
+  papCurrent = PAP_TREE;
+  const panel = document.getElementById('pap-panel');
+  panel.classList.add('show');
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  papRender();
+}
+
+function papReset() {
+  papHistory = [];
+  papCurrent = PAP_TREE;
+  papRender();
+}
+
+function papBack() {
+  if (!papHistory.length) return;
+  papCurrent = papHistory.pop();
+  papRender();
+}
+
+function papChoose(idx) {
+  papHistory.push(papCurrent);
+  papCurrent = papCurrent.options[idx];
+  if (papCurrent.genres) {
+    papShowResults(papCurrent.genres);
+  } else {
+    papRender();
+  }
+}
+
+function papRender() {
+  document.getElementById('pap-header-title').textContent = papHistory.length ? 'Up2? 🤙' : 'Up2?';
+  document.getElementById('pap-question').textContent = papCurrent.question || '';
+  document.getElementById('pap-sub').textContent = papCurrent.sub || '';
+  document.getElementById('pap-results').style.display = 'none';
+  document.getElementById('pap-options').style.display = 'flex';
+
+  // Breadcrumb
+  const bc = papHistory.slice(1).map(h => h.label).join(' → ');
+  document.getElementById('pap-breadcrumb').textContent = bc;
+
+  // Back button
+  document.getElementById('pap-back').style.display = papHistory.length ? 'block' : 'none';
+
+  // Options
+  const optEl = document.getElementById('pap-options');
+  optEl.innerHTML = '';
+  (papCurrent.options || []).forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'pap-option';
+    btn.innerHTML = `<span>${opt.emoji ? opt.emoji + ' ' : ''}${escHtml(opt.label)}</span><span class="pap-option-arrow">→</span>`;
+    btn.onclick = () => papChoose(i);
+    optEl.appendChild(btn);
+  });
+}
+
+function papShowResults(genres) {
+  document.getElementById('pap-options').style.display = 'none';
+  document.getElementById('pap-back').style.display = 'block';
+
+  // Build breadcrumb path
+  const path = papHistory.slice(1).map(h => h.label);
+  path.push(papCurrent.label);
+  document.getElementById('pap-breadcrumb').textContent = path.join(' → ');
+  document.getElementById('pap-question').textContent = 'Here\'s what\'s in the crate 🎵';
+  document.getElementById('pap-sub').textContent = path.join(' · ');
+
+  // Fuzzy match artists against genres
+  const matched = allArtists.filter(a => {
+    const artistGenres = parseGenres(a.genres).map(g => g.toLowerCase());
+    return genres.some(g =>
+      artistGenres.some(ag => ag.includes(g.toLowerCase()) || g.toLowerCase().includes(ag))
+    );
+  });
+
+  const resultsEl = document.getElementById('pap-results');
+  resultsEl.style.display = 'block';
+
+  if (!matched.length) {
+    resultsEl.innerHTML = `
+      <div class="pap-empty">
+        <div style="font-size:1.5rem;margin-bottom:8px">📭</div>
+        <div style="font-weight:600;margin-bottom:4px">Nothing in the crate for this vibe right now</div>
+        <div style="font-size:12px;margin-bottom:12px">Our directory is growing — check back soon!</div>
+        <button class="btn btn-outline btn-sm" onclick="papBack()">Try another path</button>
+      </div>`;
+    return;
+  }
+
+  // Shuffle and cap at 12 for display
+  const display = [...matched].sort(() => Math.random() - 0.5).slice(0, 12);
+
+  const listHtml = display.map(a => {
+    const imgHtml = a.image_url
+      ? `<img class="pap-artist-img" src="${escHtml(a.image_url)}" alt="${escHtml(a.name)}" loading="lazy">`
+      : `<div class="pap-artist-img-placeholder"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>`;
+    const genrePreview = parseGenres(a.genres).slice(0, 2).join(', ');
+    return `<div class="pap-artist-item" onclick='openArtistModal(${JSON.stringify(a)})'>
+      ${imgHtml}
+      <div>
+        <div class="pap-artist-name">${escHtml(a.name)}</div>
+        ${genrePreview ? `<div class="pap-artist-genres">${escHtml(genrePreview)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  const matchCount = matched.length > 12
+    ? `${matched.length} artists match · showing 12`
+    : `${matched.length} artist${matched.length === 1 ? '' : 's'} in the crate`;
+
+  resultsEl.innerHTML = `
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">${matchCount}</div>
+    <div class="pap-artist-list">${listHtml}</div>
+    <button class="btn btn-primary pap-mix-btn" onclick="papSendToMix(${JSON.stringify(genres)})">
+      🎛️ Generate a mix from this vibe
+    </button>`;
+}
+
+function papSendToMix(genres) {
+  // Pre-select genres in the mix builder and scroll to it
+  selectedMixGenres.clear();
+  genres.forEach(g => {
+    // Find matching genre pills in mix builder and activate them
+    document.querySelectorAll('#mix-genre-pills .genre-pill').forEach(pill => {
+      const pillText = pill.textContent.trim();
+      if (genres.some(g => pillText.toLowerCase().includes(g.toLowerCase()) || g.toLowerCase().includes(pillText.toLowerCase()))) {
+        selectedMixGenres.add(pillText);
+        pill.classList.add('active');
+      }
+    });
+  });
+  showPage('explorer');
+  setTimeout(() => {
+    document.getElementById('mix-builder-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 200);
+  if (selectedMixGenres.size) generateMix();
+}
 let nowPlaying = null; // { name, type, embedHtml }
 
 function showNowPlayingBar(name, type) {
