@@ -3755,7 +3755,7 @@ async function backfillTracks() {
     try {
       // top-tracks is 403 under client-credentials, so use /search (same as the live mix)
       const resp = await fetch(
-        `https://api.spotify.com/v1/search?q=artist:${encodeURIComponent(a.name)}&type=track&limit=20&market=NZ`,
+        `https://api.spotify.com/v1/search?q=artist:${encodeURIComponent(a.name)}&type=track&limit=10&market=NZ`,
         { headers: { 'Authorization': 'Bearer ' + (await getSpotifyToken()) } }
       );
 
