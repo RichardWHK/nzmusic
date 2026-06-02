@@ -3753,9 +3753,11 @@ async function backfillTracks() {
     const a = missing[i];
     if (btn) btn.textContent = `↺ ${i+1}/${missing.length} — ${a.name}`;
     try {
-      const resp = await fetch(`https://api.spotify.com/v1/artists/${a.spotify_id}/top-tracks?market=NZ`, {
-        headers: { 'Authorization': 'Bearer ' + (await getSpotifyToken()) }
-      });
+      // top-tracks is 403 under client-credentials, so use /search (same as the live mix)
+      const resp = await fetch(
+        `https://api.spotify.com/v1/search?q=artist:${encodeURIComponent(a.name)}&type=track&limit=20&market=NZ`,
+        { headers: { 'Authorization': 'Bearer ' + (await getSpotifyToken()) } }
+      );
 
       if (resp.status === 429) {
         const wait = (parseInt(resp.headers.get('Retry-After') || '10') + 2) * 1000;
@@ -3768,19 +3770,29 @@ async function backfillTracks() {
 
       if (resp.ok) {
         const data = await resp.json();
-        // Keep up to 8 top tracks, store just their IDs
-        const ids = (data?.tracks || []).slice(0, 8).map(t => t.id).filter(Boolean);
+        // Keep only tracks actually credited to this artist (exact ID match), de-duped, up to 8
+        const seen = new Set();
+        const ids = (data?.tracks?.items || [])
+          .filter(t => t?.id && t.artists?.some(ta => ta.id === a.spotify_id))
+          .map(t => t.id)
+          .filter(id => { if (seen.has(id)) return false; seen.add(id); return true; })
+          .slice(0, 8);
+
         if (ids.length) {
           const rowIdx = artists.findIndex(r => r.spotify_id === a.spotify_id);
-          await sheetsWrite('update_artist_tracks', { row: rowIdx, track_ids: ids.join(',') });
-          updated++;
+          const ok = await sheetsWrite('update_artist_tracks', { row: rowIdx, track_ids: ids.join(',') });
+          console.log(`[tracks] ${a.name}: ${ids.length} ids, row ${rowIdx}, write ${ok ? 'OK' : 'FAILED'}`);
+          if (ok) updated++; else failed++;
         } else {
-          skipped++; // no top tracks returned
+          console.warn(`[tracks] ${a.name}: search ok but no exact-match tracks`);
+          skipped++;
         }
       } else {
+        const body = await resp.text().catch(() => '');
+        console.error(`[tracks] ${a.name}: API ${resp.status}`, body.slice(0, 200));
         failed++;
       }
-    } catch { failed++; }
+    } catch (err) { console.error(`[tracks] ${a.name}: exception`, err); failed++; }
 
     await sleep(DELAY_MS);
   }
